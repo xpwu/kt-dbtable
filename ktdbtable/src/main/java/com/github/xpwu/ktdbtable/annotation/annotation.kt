@@ -23,6 +23,8 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
 
 /**
  *
+ * TYPE 根据字段定义自动推断
+ *
  * NOT NULL 通过属性的定义是否有option自动判断
  *
  * DEFAULT 通过属性定义时的默认值自动获取

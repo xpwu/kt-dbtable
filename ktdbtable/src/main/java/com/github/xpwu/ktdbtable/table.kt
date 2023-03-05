@@ -14,10 +14,18 @@ class TableBase(override val Name: String, override val DB: DB) : Table
 data class Version(val from: Int = 0, val to: Int = 0)
 typealias Migration = (Table) -> Unit
 
+typealias ColumnName = String
+typealias AlterSQL = String
+
+typealias IndexName = String
+typealias IndexSQL = String
+
 class TableInfo {
   val Version = 0
   val Name = ""
-  val Migrator: Map<Version, Migration> = mapOf()
+  val Migrator: Map<Version, Migration> = emptyMap()
+  val Columns: Map<ColumnName, AlterSQL> = emptyMap()
+  val Indexes: Map<IndexName, IndexSQL> = emptyMap()
 }
 
 interface TableContainer {
@@ -32,7 +40,7 @@ class TableContainer_Impl : TableContainer {
   }
 }
 
-fun GetTableInfo(name: String) : TableInfo? {
+fun GetTableInfo(name: String): TableInfo? {
   val kClass = TableContainer::class.qualifiedName
     ?.let { Class.forName(it + "_Impl").kotlin }
 
@@ -44,13 +52,13 @@ fun GetTableInfo(name: String) : TableInfo? {
 //}
 
 fun GetTableMigrators(name: String, from: Int, to: Int): List<Migration> {
-  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrator?: return emptyList())
+  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrator ?: return emptyList())
 }
 
-private fun convert(m: Map<Version, Migration>) : SparseArrayCompat<SparseArrayCompat<Migration>> {
+private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCompat<Migration>> {
   val migrations: SparseArrayCompat<SparseArrayCompat<Migration>> = SparseArrayCompat()
 
-  for ((k,v) in m) {
+  for ((k, v) in m) {
     var f = migrations[k.from]
     if (f == null) {
       f = SparseArrayCompat<Migration>()
