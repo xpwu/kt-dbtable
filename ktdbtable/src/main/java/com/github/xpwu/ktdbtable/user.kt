@@ -4,26 +4,27 @@ import com.github.xpwu.ktdbtable.annotation.*
 import com.github.xpwu.ktdbtable.annotation.Column
 import com.github.xpwu.ktdbtable.annotation.Table
 
-@Table("name")
+@Table("user")
 class User {
   companion object
 
   @Column("id")
   @Index
   @Index
-  var Id: String = ""
-  var Name: String = ""
+  var Id: String? = null
+  @Column(primaryKey = PrimaryKey.MULTI_DESC)
+  var Name: String = "xp"
 }
 
-@Migrator(User::class)
-fun Migrators(): Map<Version, Migration> {
+
+fun User.Companion.Migrators(): Map<Version, Migration> {
   return mapOf(
     Version(0, 2) to {table -> table.DB}
   )
 }
 
-@Initializer(User::class)
-fun Initializer(): Collection<User> {
+
+fun User.Companion.Initializer(): Collection<User> {
   return listOf()
 }
 

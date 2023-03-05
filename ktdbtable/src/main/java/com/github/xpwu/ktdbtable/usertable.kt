@@ -2,7 +2,7 @@ package com.github.xpwu.ktdbtable
 
 fun User.Companion.In(db: DB): Table {
   if (!db.Exist(UserTableName)) {
-    createUserTable(db)
+    User.CreateTable(db)
   }
   return TableBase(UserTableName, db)
 }
@@ -14,7 +14,7 @@ val User.Companion.Name
   get() = Column("Name")
 
 
-private fun createUserTable(db: DB) {
+private fun User.Companion.CreateTable(db: DB) {
 
   db.execSQL("CREATE TABLE IF NOT EXISTS xxx ")
   // create index

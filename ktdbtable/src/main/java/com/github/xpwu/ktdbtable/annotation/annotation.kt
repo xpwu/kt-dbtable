@@ -1,17 +1,70 @@
 package com.github.xpwu.ktdbtable.annotation
 
-import kotlin.reflect.KClass
-
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.BINARY)
 annotation class Table(val name: String, val version: Int = 0)
 
-annotation class Column(val name: String = "")
-
-annotation class Migrator(val clazz: KClass<*>)
 
 /**
  *
+ALTER:
+
+https://www.sqlite.com/lang_altertable.html
+
+The new column may take any of the forms permissible in a CREATE TABLE statement, with the following restrictions:
+
+1、The column may not have a PRIMARY KEY or UNIQUE constraint.
+2、The column may not have a default value of CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP, or an expression in parentheses.
+3、If a NOT NULL constraint is specified, then the column must have a default value other than NULL.
+4、If foreign key constraints are enabled and a column with a REFERENCES clause is added, the column must have a default value of NULL.
+5、The column may not be GENERATED ALWAYS ... STORED, though VIRTUAL columns are allowed.
+
  */
-annotation class Initializer(val clazz: KClass<*>)
+
+/**
+ *
+ * NOT NULL 通过属性的定义是否有option自动判断
+ *
+ * DEFAULT 通过属性定义时的默认值自动获取
+ *
+ * UNIQUE 放入Index注解中，也方便 ALTER 的使用
+ *
+ * CHECK 约束：CHECK 约束确保某列中的所有值满足一定条件, 暂未支持 // todo
+ *
+ * @param name: 如果设置为""，则为属性名；如果为"_"，则忽略此字段
+ *
+ * @param primaryKey PRIMARY Key 约束。MULTI_约束的顺序与字段的定义的顺序一致
+ *
+ * @param notNull NOT NULL, 如果属性是option的定义，notNull必须为false，即时设定notNull为true，该设置也不生效
+ *
+ */
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.BINARY)
+annotation class Column(
+  val name: String = "",
+  val primaryKey: PrimaryKey = PrimaryKey.FALSE,
+  val notNull: Boolean = false,
+)
+
+enum class PrimaryKey(val result:String) {
+  FALSE(""), MULTI(""), MULTI_DESC("DESC"),
+  ONLY_ONE("PRIMARY KEY"), ONLY_ONE_DESC("PRIMARY KEY DESC"),
+  ONLY_ONE_AUTO_INC("PRIMARY KEY AUTOINCREMENT"),
+  ONLY_ONE_AUTO_INC_DESC("PRIMARY KEY DESC AUTOINCREMENT"),
+}
+
+/**
+ *
+ *
+ * @param name: 1、如果设置为""，则为 tableName_columnName;
+ *              2、如果不是默认值，name相同的一起形成联合索引，联合索引的名字为tableName_name
+ *              3、联合索引的顺序与字段的定义的顺序一致。
+ *
+ * @param unique
+ *
+ * @param desc
+ *
+ */
 
 @Repeatable
-annotation class Index(val name: String = "")
+annotation class Index(val unique:Boolean = false, val name: String = "", val desc:Boolean = false)

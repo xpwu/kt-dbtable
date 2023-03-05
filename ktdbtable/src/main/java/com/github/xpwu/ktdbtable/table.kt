@@ -1,6 +1,7 @@
 package com.github.xpwu.ktdbtable
 
 import androidx.collection.SparseArrayCompat
+import kotlin.reflect.full.createInstance
 
 
 interface Table {
@@ -19,16 +20,31 @@ class TableInfo {
   val Migrator: Map<Version, Migration> = mapOf()
 }
 
-val AllTables = mapOf<String, TableInfo>(
-
-)
-
-fun GetTableLatestVersion(name: String): Int? {
-  return AllTables[name]?.Version
+interface TableContainer {
+  val AllTables: Map<String, TableInfo>
 }
 
+class TableContainer_Impl : TableContainer {
+  override val AllTables: Map<String, TableInfo> by lazy {
+    mapOf(
+      // todo
+    )
+  }
+}
+
+fun GetTableInfo(name: String) : TableInfo? {
+  val kClass = TableContainer::class.qualifiedName
+    ?.let { Class.forName(it + "_Impl").kotlin }
+
+  return (kClass?.createInstance() as? TableContainer)?.AllTables?.get(name)
+}
+
+//fun GetTableLatestVersion(name: String): Int? {
+//  return GetTableInfo(name)?.Version
+//}
+
 fun GetTableMigrators(name: String, from: Int, to: Int): List<Migration> {
-  return FineBestMigratorPath(from, to, AllTables[name]?.Migrator?: return emptyList())
+  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrator?: return emptyList())
 }
 
 private fun convert(m: Map<Version, Migration>) : SparseArrayCompat<SparseArrayCompat<Migration>> {
