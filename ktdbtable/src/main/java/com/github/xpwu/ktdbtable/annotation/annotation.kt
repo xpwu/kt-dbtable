@@ -48,6 +48,8 @@ annotation class Column(
   val notNull: Boolean = false,
 )
 
+// todo   AUTOINCREMENT 只能与int 结合使用
+
 enum class PrimaryKey(val result:String) {
   FALSE(""), MULTI(""), MULTI_DESC("DESC"),
   ONLY_ONE("PRIMARY KEY"), ONLY_ONE_DESC("PRIMARY KEY DESC"),

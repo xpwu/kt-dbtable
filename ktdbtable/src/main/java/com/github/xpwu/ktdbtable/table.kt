@@ -5,6 +5,8 @@ import kotlin.reflect.full.createInstance
 
 
 interface Table {
+  companion object
+
   val DB: DB
   val Name: String
 }
@@ -15,15 +17,17 @@ data class Version(val from: Int = 0, val to: Int = 0)
 typealias Migration = (Table) -> Unit
 
 typealias ColumnName = String
+// "ALTER TABLE table_name ADD COLUMN ..."
 typealias AlterSQL = String
 
 typealias IndexName = String
+// "CREATE INDEX IF NOT EXISTS ..."
 typealias IndexSQL = String
 
 class TableInfo {
   val Version = 0
   val Name = ""
-  val Migrator: Map<Version, Migration> = emptyMap()
+  val Migrators: Map<Version, Migration> = emptyMap()
   val Columns: Map<ColumnName, AlterSQL> = emptyMap()
   val Indexes: Map<IndexName, IndexSQL> = emptyMap()
 }
@@ -32,7 +36,7 @@ interface TableContainer {
   val AllTables: Map<String, TableInfo>
 }
 
-class TableContainer_Impl : TableContainer {
+class TableContainerImpl : TableContainer {
   override val AllTables: Map<String, TableInfo> by lazy {
     mapOf(
       // todo
@@ -40,19 +44,24 @@ class TableContainer_Impl : TableContainer {
   }
 }
 
-fun GetTableInfo(name: String): TableInfo? {
+private val allTables = lazy {
   val kClass = TableContainer::class.qualifiedName
-    ?.let { Class.forName(it + "_Impl").kotlin }
+    ?.let { Class.forName(it + "Impl").kotlin }
 
-  return (kClass?.createInstance() as? TableContainer)?.AllTables?.get(name)
+  (kClass?.createInstance() as? TableContainer)?.AllTables
+}
+
+fun Table.Companion.GetInfo(name: String): TableInfo? {
+  return allTables.value?.get(name)
 }
 
 //fun GetTableLatestVersion(name: String): Int? {
 //  return GetTableInfo(name)?.Version
 //}
 
-fun GetTableMigrators(name: String, from: Int, to: Int): List<Migration> {
-  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrator ?: return emptyList())
+// todo check path at compile
+fun Table.Companion.GetMigrations(name: String, from: Int, to: Int): List<Migration>? {
+  return FineBestMigratorPath(from, to, Table.GetInfo(name)?.Migrators)
 }
 
 private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCompat<Migration>> {
@@ -73,10 +82,12 @@ private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCo
   return migrations
 }
 
-fun FineBestMigratorPath(from: Int, to: Int, m: Map<Version, Migration>): List<Migration> {
+fun FineBestMigratorPath(from: Int, to: Int, m: Map<Version, Migration>?): List<Migration>? {
   if (from == to) {
     return emptyList()
   }
+
+  m?:return null
 
   var start = from
   val migrations = convert(m)
