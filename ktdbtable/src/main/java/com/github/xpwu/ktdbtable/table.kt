@@ -1,6 +1,7 @@
 package com.github.xpwu.ktdbtable
 
 import androidx.collection.SparseArrayCompat
+import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
 
@@ -11,7 +12,7 @@ interface Table {
   val Name: String
 }
 
-class TableBase(override val Name: String, override val DB: DB) : Table
+data class TableBase(override val Name: String, override val DB: DB) : Table
 
 data class Version(val from: Int = 0, val to: Int = 0)
 typealias Migration = (Table) -> Unit
