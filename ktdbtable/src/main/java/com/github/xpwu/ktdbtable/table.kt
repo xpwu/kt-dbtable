@@ -1,21 +1,20 @@
 package com.github.xpwu.ktdbtable
 
 import androidx.collection.SparseArrayCompat
-import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
 
-interface Table {
+interface Table<out T> {
   companion object
 
-  val DB: DB
-  val Name: String
+//  val DB: DB<out T>
+//  val TableName: String
 }
 
-data class TableBase(override val Name: String, override val DB: DB) : Table
+//data class TableBase<out T>(override val TableName: String, override val DB: DB<out T>) : Table<T>
 
 data class Version(val from: Int = 0, val to: Int = 0)
-typealias Migration = (Table) -> Unit
+typealias Migration = (DB<*>) -> Unit
 
 typealias ColumnName = String
 // "ALTER TABLE table_name ADD COLUMN ..."
@@ -37,14 +36,6 @@ interface TableContainer {
   val AllTables: Map<String, TableInfo>
 }
 
-class TableContainerImpl : TableContainer {
-  override val AllTables: Map<String, TableInfo> by lazy {
-    mapOf(
-      // todo
-    )
-  }
-}
-
 private val allTables = lazy {
   val kClass = TableContainer::class.qualifiedName
     ?.let { Class.forName(it + "Impl").kotlin }
@@ -55,10 +46,6 @@ private val allTables = lazy {
 fun Table.Companion.GetInfo(name: String): TableInfo? {
   return allTables.value?.get(name)
 }
-
-//fun GetTableLatestVersion(name: String): Int? {
-//  return GetTableInfo(name)?.Version
-//}
 
 // todo check path at compile
 fun Table.Companion.GetMigrations(name: String, from: Int, to: Int): List<Migration>? {
