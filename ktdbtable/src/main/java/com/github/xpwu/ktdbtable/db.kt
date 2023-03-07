@@ -72,7 +72,7 @@ fun DB.CreateXMaster() {
 fun DB.OldVersion(table: String): Int {
   this.CreateXMaster()
   val cursor: Cursor = this.query(
-    "SELECT $tableVersion FROM $xmasterTable WHERE $tableName = ", arrayOf(table)
+    "SELECT $tableVersion FROM $xmasterTable WHERE $tableName = ?", arrayOf(table)
   )
 
   // default = 0
