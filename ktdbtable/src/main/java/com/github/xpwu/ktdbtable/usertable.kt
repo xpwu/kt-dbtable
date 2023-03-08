@@ -6,7 +6,7 @@ fun User.Companion.TableNameIn(db: DB<*>): String {
   if (!db.Exist(name)) {
     User.CreateTableIn(db)
   } else {
-    db.OnOpen(name, User::class)
+    db.OnOpenAndUpgrade(name, User::class)
   }
 
   return name
@@ -26,7 +26,7 @@ val User.Companion.Name
   get() = Column("Name")
 
 
-private fun User.Companion.CreateTableIn(db: DB<*>) {
+fun User.Companion.CreateTableIn(db: DB<*>) {
   db.OnlyForInitTable(listOf(
     "CREATE TABLE IF NOT EXISTS xxx ",
     // create index

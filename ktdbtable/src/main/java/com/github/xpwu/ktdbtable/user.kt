@@ -27,6 +27,11 @@ fun User.Companion.Migrators(): Map<Version, Migration> {
   )
 }
 
+fun User.Companion.Update(db: DB<SQLiteDatabase>) {
+  val name = User.TableNameIn(db)
+  db.UnderlyingDB.execSQL("")
+}
+
 
 fun User.Companion.Initializer(): Collection<User> {
   return listOf()

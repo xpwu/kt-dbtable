@@ -50,7 +50,13 @@ class DB<T>(internal val dber: DBer<T>, tablesBinding: ArrayList<TableBinding>,
       name2binding[binding.second] = binding.first
     }
 
-    // ToDo init tablesBinding
+    for (table in tablesBinding) {
+      if (!this.Exist(table.second)) {
+        Table.CreateTableIn(table.first, this)
+      } else {
+        this.OnOpenAndUpgrade(table.second, table.first)
+      }
+    }
 
     if (upgrade) {
       this.OnOpen()
@@ -171,8 +177,14 @@ class syncTableCache {
 }
 
 fun DB<*>.OnlyForInitTable(sqls: List<String>) {
-  for (sql in sqls) {
-    this.dber.ExecSQL(sql)
+  this.dber.BeginTransaction()
+  try {
+    for (sql in sqls) {
+      this.dber.ExecSQL(sql)
+    }
+    this.dber.SetTransactionSuccessful()
+  } finally {
+    this.dber.EndTransaction()
   }
 }
 
@@ -330,17 +342,94 @@ internal class upgradeContext(
   val count: Int get() = allMigrations.size + allAlterSQLs.size + allAddIndexes.size
 }
 
-// 找出Table.GetInfo的真实key，如果有重复，Table.GetInfo 中的key 为 kclass.qualifiedName
+// 找出Table.GetInfo的真实key，如果有重复，Table.GetInfo 中的 key 为 kclass.qualifiedName
 private fun DB<*>.unBinding(name: String): String {
   return this.name2binding[name]?.qualifiedName?:name
 }
 
-fun DB<*>.OnOpen(table: String, kclazz: KClass<*>) {
-  if (this.opened.contains(table)) {
+fun DB<*>.OnOpenAndUpgrade(tableA: String, kclazz: KClass<*>) {
+  // 1、name
+  val name = this.Name(kclazz)?:tableA
+  val infoName = kclazz.qualifiedName?:""
+  if (this.opened.contains(name)) {
     return
   }
 
-  // todo
+  // 2、对比所有的version  找出 migrator
+  val oldVersion = this.OldVersion(name)
+  val allMigrations = emptyList<MInfo>().toMutableList()
+  val nowV = Table.GetInfo(infoName)?.Version?:return
+  // 能找到的 都是opened
+  this.opened.add(name)
+  if (nowV == oldVersion) return
+  val res = Table.GetMigrations(infoName, oldVersion, nowV)
+    ?: throw SQLException("can NOT migrate table(${name}) from ${oldVersion} to $nowV")
+  allMigrations += MInfo(res, name, oldVersion, nowV)
+
+  // 3、因为不需要总数，这里先不对比出所有需要补充的字段
+  /**
+  val allAlterSQLs = emptyList<String>().toMutableList()
+  val oldColumns = this.TableColumnNames(name)
+  val nowColumns = Table.GetInfo(infoName)?.Columns ?: emptyMap()
+  val needAdders = nowColumns - oldColumns.toSet()
+  for ((_, adder) in needAdders) {
+  allAlterSQLs += adder
+  }
+   */
+
+
+  // 4、对比出所有需要增加的索引
+  val allAddIndexes = emptyList<String>().toMutableList()
+  val oldIndexNames = this.AllIndexes().toSet()
+  val nowIndexes = Table.GetInfo(infoName)?.Indexes ?: emptyMap()
+  val needAdders2 = nowIndexes - oldIndexNames
+  for ((_, adder) in needAdders2) {
+    allAddIndexes += adder
+  }
+
+  // 5、不求总数了
+
+  this.dber.BeginTransaction()
+  try {
+    // 6、先执行migrator
+    for ((ms, n, from, to) in allMigrations) {
+      Log.I("migrate $n from $from to $to ...")
+      for (mig in ms) {
+        mig(this)
+      }
+      // 6-2、更新版本号，即使每一个 mig 都做了更新，这里也再统一做一次，防止漏做
+      // 在每一个mig的执行中，本也应该做一次更好，即使没做，也不影响最后的结果，也不会在下一次重新做
+      // 因为这里是事务，所以不用考虑中间失败了，而没有及时做版本号更新的情况。
+      this.SetVersion(name, to)
+    }
+    // 7、再alter add column 执行字段的补充，前面的migrator可能已经涉及这里的操作，所以需要重新判断。
+    // 7-1、对比出所有需要补充的字段
+    val allAlterSQLs = emptyList<String>().toMutableList()
+    val oldColumns = this.TableColumnNames(name)
+    val nowColumns = Table.GetInfo(infoName)?.Columns ?: emptyMap()
+    val needAdders = nowColumns - oldColumns.toSet()
+    for ((_, adder) in needAdders) {
+      allAlterSQLs += adder
+    }
+    // 7-2、执行：  新的执行数量应该是 不大于之前的 alter 数量
+    for (alter in allAlterSQLs) {
+      Log.I(alter)
+      this.dber.ExecSQL(alter)
+    }
+
+    // 8、最后执行 add index, 因为有 if not exists 所以可以直接执行
+    for (index in allAddIndexes) {
+      Log.I(index)
+      this.dber.ExecSQL(index)
+    }
+    this.dber.SetTransactionSuccessful()
+
+  } catch (e: Exception) {
+    e.printStackTrace();
+    throw e
+  } finally {
+    this.dber.EndTransaction()
+  }
 }
 
 // 返回需要运行的升级数量，0 表示不需要升级
@@ -358,7 +447,7 @@ private fun DB<*>.OnOpen(): Int {
     this.opened.add(allTables[i])
 
     if (nowV == oldVersions[i]) continue
-    val res = Table.GetMigrations(allTables[i], oldVersions[i], nowV)
+    val res = Table.GetMigrations(this.unBinding(allTables[i]), oldVersions[i], nowV)
       ?: throw SQLException("can NOT migrate table(${allTables[i]}) from ${oldVersions[i]} to $nowV")
     allMigrations += MInfo(res, allTables[i], oldVersions[i], nowV)
   }
@@ -388,8 +477,7 @@ private fun DB<*>.OnOpen(): Int {
 }
 
 private fun DB<*>.OnUpgrade(onProgress: (Int) -> Unit = {}) {
-  val count = this.uContext.allMigrations.size +
-    this.uContext.allAlterSQLs.size + this.uContext.allAddIndexes.size
+  val count = this.uContext.count
   var done = 0
 
   onProgress(done)
