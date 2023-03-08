@@ -34,7 +34,7 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  *
  * CHECK 约束：CHECK 约束确保某列中的所有值满足一定条件, 暂未支持 // todo
  *
- * @param name: 如果设置为""，则为属性名；如果为"_"，则忽略此字段
+ * @param name: 如果为"_"，则忽略此字段
  *
  * @param primaryKey PRIMARY Key 约束。MULTI_约束的顺序与字段的定义的顺序一致
  *

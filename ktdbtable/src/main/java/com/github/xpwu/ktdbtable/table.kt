@@ -34,12 +34,12 @@ typealias IndexName = String
 // "CREATE INDEX IF NOT EXISTS ..."
 typealias IndexSQL = String
 
-class TableInfo {
-  val Version = 0
-  val Migrators: Map<Version, Migration> = emptyMap()
-  val Columns: Map<ColumnName, AlterSQL> = emptyMap()
-  val Indexes: Map<IndexName, IndexSQL> = emptyMap()
-}
+data class TableInfo (
+  val Version: Int = 0,
+  val Migrators: Map<Version, Migration> = emptyMap(),
+  val Columns: Map<ColumnName, AlterSQL> = emptyMap(),
+  val Indexes: Map<IndexName, IndexSQL> = emptyMap(),
+)
 
 interface TableContainer {
   val AllTables: Map<String, TableInfo>

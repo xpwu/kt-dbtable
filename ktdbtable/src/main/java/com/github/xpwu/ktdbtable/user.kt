@@ -13,7 +13,7 @@ class User {
   @Index
   @Index
   var Id: String? = null
-  @Column(primaryKey = PrimaryKey.MULTI_DESC)
+  @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
   var Name: String = "xp"
 }
 

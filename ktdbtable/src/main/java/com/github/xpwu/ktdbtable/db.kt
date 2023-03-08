@@ -176,16 +176,8 @@ class syncTableCache {
   }
 }
 
-fun DB<*>.OnlyForInitTable(sqls: List<String>) {
-  this.dber.BeginTransaction()
-  try {
-    for (sql in sqls) {
-      this.dber.ExecSQL(sql)
-    }
-    this.dber.SetTransactionSuccessful()
-  } finally {
-    this.dber.EndTransaction()
-  }
+fun DB<*>.OnlyForInitTable(exe: (db: DBInner)->Unit) {
+  exe(this.dber)
 }
 
 fun DB<*>.Name(table: KClass<*>): String? {
