@@ -10,12 +10,7 @@ import kotlin.reflect.full.declaredMemberExtensionFunctions
 
 interface Table {
   companion object
-
-//  val DB: DB<out T>
-//  val TableName: String
 }
-
-//data class TableBase<out T>(override val TableName: String, override val DB: DB<out T>) : Table<T>
 
 fun Table.Companion.CreateTableIn(table: KClass<*>, db: DB<*>) {
   val eFuncs = table.companionObject?.declaredMemberExtensionFunctions ?: return

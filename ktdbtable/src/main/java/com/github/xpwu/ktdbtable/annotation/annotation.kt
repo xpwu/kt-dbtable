@@ -2,6 +2,7 @@ package com.github.xpwu.ktdbtable.annotation
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.BINARY)
+// version default is 0, do not edit
 annotation class Table(val name: String, val version: Int = 0)
 
 
@@ -43,7 +44,8 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.BINARY)
 annotation class Column(
-  val name: String = "",
+  // 为了防止修改属性名，而造成列名非预期的自动修改，name在注解中必须明确赋值
+  val name: String,
   val primaryKey: PrimaryKey = PrimaryKey.FALSE,
   val notNull: Boolean = false,
 )
