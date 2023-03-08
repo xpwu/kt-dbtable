@@ -41,9 +41,13 @@ data class TableInfo (
   val Indexes: Map<IndexName, IndexSQL> = emptyMap(),
 )
 
-interface TableContainer {
-  val AllTables: Map<String, TableInfo>
-}
+//interface TableContainer {
+//  val AllTables: Map<String, TableInfo>
+//}
+
+//object TableContainer{
+//  val AllTables: Map<String, TableInfo>
+//}
 
 /**
  *
@@ -60,15 +64,21 @@ interface TableContainer {
  * 在项目(库)使用过程中，table不必也不应该修改已经被使用的名字。
  *
  */
-private val allTables = lazy {
-  val kClass = TableContainer::class.qualifiedName
-    ?.let { Class.forName(it + "Impl").kotlin }
-
-  (kClass?.createInstance() as? TableContainer)?.AllTables
+object TableContainer{
+  val AllTables: Map<String, TableInfo> by lazy {
+    mapOf()
+  }
 }
 
+//private val allTables = lazy {
+//  val kClass = TableContainer::class.qualifiedName
+//    ?.let { Class.forName(it + "Impl").kotlin }
+//
+//  (kClass?.createInstance() as? TableContainer)?.AllTables
+//}
+
 fun Table.Companion.GetInfo(name: String): TableInfo? {
-  return allTables.value?.get(name)
+  return TableContainerImpl.AllTables[name]
 }
 
 // todo check path at compile

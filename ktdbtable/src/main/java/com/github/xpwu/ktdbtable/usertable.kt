@@ -30,10 +30,10 @@ fun User.Companion.CreateTableIn(db: DB<*>) {
   db.OnlyForInitTable {
     it.BeginTransaction()
     try {
-      it.ExecSQL("CREATE TABLE IF NOT EXISTS $tableName($columnname $type $primarykey $DESC $AUTOINCREMENT $notnull $defaultvalue, $primarykeyT$($columnname $DESC, $columnname $DESC $) )")
-      it.ExecSQL("CREATE $UNIQUE INDEX IF NOT EXISTS ${tableName}_$columnname ON ${tableName}($columnname $DESC)")
-      db.SetVersion(tableName, userTableVersion)
-      it.Insert(tableName, SQLiteDatabase.CONFLICT_IGNORE, )
+//      it.ExecSQL("CREATE TABLE IF NOT EXISTS $tableName($columnname $type $primarykey $DESC $AUTOINCREMENT $notnull $defaultvalue, $primarykeyT$($columnname $DESC, $columnname $DESC $) )")
+//      it.ExecSQL("CREATE $UNIQUE INDEX IF NOT EXISTS ${tableName}_$columnname ON ${tableName}($columnname $DESC)")
+//      db.SetVersion(tableName, userTableVersion)
+//      it.Insert(tableName, SQLiteDatabase.CONFLICT_IGNORE, )
       it.SetTransactionSuccessful()
     } finally {
       it.EndTransaction()

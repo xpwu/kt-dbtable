@@ -8,10 +8,19 @@ package com.github.xpwu.ktdbtable
 //)
 
 
-class TableContainerImpl : TableContainer {
-  override val AllTables: Map<String, TableInfo> by lazy {
+//class TableContainerImpl : TableContainer {
+//  override val AllTables: Map<String, TableInfo> by lazy {
+//    mapOf(
+//      "$defaultName" to TableInfo(userTableVersion, ),
+//      (User::class.qualifiedName?:"") to TableInfo()
+//    )
+//  }
+//}
+
+object TableContainerImpl{
+  val AllTables: Map<String, TableInfo> by lazy {
     mapOf(
-      "$defaultName" to TableInfo(userTableVersion, ),
+//      "$defaultName" to TableInfo(userTableVersion, ),
       (User::class.qualifiedName?:"") to TableInfo()
     )
   }
