@@ -24,14 +24,35 @@ interface UnderlyingDBer<T> {
   val UnderlyingDB: T
 }
 
-interface DBer<T>: DBInner, UnderlyingDBer<T>
+interface DBer<T> : DBInner, UnderlyingDBer<T>
 
-class DB<T>(internal val dber: DBer<T>, autoUpgrade: Boolean = true) : UnderlyingDBer<T> by dber {
+typealias TableBinding = Pair<KClass<*>, String>
+
+fun MakeBinding(kclazz: KClass<*>, rename: String): TableBinding {
+  return Pair(kclazz, rename)
+}
+
+/**
+ * @param tablesBinding 明确binding 一个 table在此db中，也可以作为某一个table在此db中的重命名
+ */
+class DB<T>(internal val dber: DBer<T>, tablesBinding: ArrayList<TableBinding>,
+            upgrade: Boolean = true) : UnderlyingDBer<T> by dber {
   internal val tableCache = syncTableCache()
   internal var uContext: upgradeContext = upgradeContext()
+  internal val binding2name: MutableMap<KClass<*>, String> = emptyMap<KClass<*>, String>().toMutableMap()
+  internal val name2binding: MutableMap<String, KClass<*>> = emptyMap<String, KClass<*>>().toMutableMap()
+  // real table name
+  internal val opened: MutableSet<String> = emptySet<String>().toMutableSet()
 
   init {
-    if (autoUpgrade) {
+    for (binding in tablesBinding) {
+      binding2name[binding.first] = binding.second
+      name2binding[binding.second] = binding.first
+    }
+
+    // ToDo init tablesBinding
+
+    if (upgrade) {
       this.OnOpen()
       this.OnUpgrade()
     }
@@ -44,7 +65,7 @@ class DB<T>(internal val dber: DBer<T>, autoUpgrade: Boolean = true) : Underlyin
    * @param onProgress 进度回调
    * @param total 总数
    */
-  fun Upgrade(onProgress: (Int)->Unit, total: (Int)->Unit = {}) {
+  fun Upgrade(onProgress: (Int) -> Unit, total: (Int) -> Unit = {}) {
     // 需要重新OnOpen，确保是最新的状态
     total(this.OnOpen())
     this.OnUpgrade(onProgress)
@@ -78,7 +99,8 @@ class SQLiteAdapter(override val UnderlyingDB: SQLiteDatabase) : DBer<SQLiteData
   }
 }
 
-class SupportSQLiteAdapter(override val UnderlyingDB: SupportSQLiteDatabase) : DBer<SupportSQLiteDatabase> {
+class SupportSQLiteAdapter(override val UnderlyingDB: SupportSQLiteDatabase) :
+  DBer<SupportSQLiteDatabase> {
   override val Path: String = UnderlyingDB.path
   override fun ExecSQL(sql: String) {
     UnderlyingDB.execSQL(sql)
@@ -154,6 +176,10 @@ fun DB<*>.OnlyForInitTable(sqls: List<String>) {
   }
 }
 
+fun DB<*>.Name(table: KClass<*>): String? {
+  return binding2name[table]
+}
+
 private const val sqlMaster = "sqlite_master"
 
 fun DB<*>.Exist(table: String): Boolean {
@@ -202,24 +228,25 @@ fun DB<*>.AllIndexes(): ArrayList<String> {
   return ret
 }
 
-private const val xmasterTable = "xdbtable_master"
-private const val tableName = "table_name"
-private const val tableVersion = "version"
+const val XMasterTable = "xdbtable_master"
+const val XMasterTblNameColumn = "table_name"
+const val XMasterTblVersionColumn = "version"
 
 fun DB<*>.CreateXMaster() {
-  if (this.Exist(xmasterTable)) {
+  if (this.Exist(XMasterTable)) {
     return
   }
 
   this.dber.ExecSQL(
-    "CREATE TABLE IF NOT EXISTS $xmasterTable ($tableName TEXT PRIMARY KEY NOT NULL, $tableVersion INTEGER)"
+    "CREATE TABLE IF NOT EXISTS $XMasterTable ($XMasterTblNameColumn TEXT PRIMARY KEY NOT NULL, $XMasterTblVersionColumn INTEGER)"
   )
 }
 
 fun DB<*>.OldVersion(table: String): Int {
   this.CreateXMaster()
   val cursor: Cursor = this.dber.Query(
-    "SELECT $tableVersion FROM $xmasterTable WHERE $tableName = ?", arrayOf(table)
+    "SELECT $XMasterTblVersionColumn FROM $XMasterTable WHERE $XMasterTblNameColumn = ?",
+    arrayOf(table)
   )
 
   // default = 0
@@ -250,7 +277,7 @@ fun DB<*>.OldVersions(tables: ArrayList<String>): IntArray {
   this.CreateXMaster()
   val placeholder = MakePlaceHolder(tables.size)
   val cursor: Cursor = this.dber.Query(
-    "SELECT $tableVersion FROM $xmasterTable WHERE $tableName = ($placeholder)",
+    "SELECT $XMasterTblVersionColumn FROM $XMasterTable WHERE $XMasterTblNameColumn = ($placeholder)",
     tables.toArray(emptyArray())
   )
 
@@ -269,9 +296,9 @@ fun DB<*>.OldVersions(tables: ArrayList<String>): IntArray {
 fun DB<*>.SetVersion(table: String, version: Int) {
   this.CreateXMaster()
   val cv = ContentValues(2)
-  cv.put(tableName, table)
-  cv.put(tableVersion, version)
-  this.dber.Insert(xmasterTable, SQLiteDatabase.CONFLICT_REPLACE, cv)
+  cv.put(XMasterTblNameColumn, table)
+  cv.put(XMasterTblVersionColumn, version)
+  this.dber.Insert(XMasterTable, SQLiteDatabase.CONFLICT_REPLACE, cv)
 }
 
 fun DB<*>.TableColumnNames(table: String): ArrayList<String> {
@@ -303,6 +330,19 @@ internal class upgradeContext(
   val count: Int get() = allMigrations.size + allAlterSQLs.size + allAddIndexes.size
 }
 
+// 找出Table.GetInfo的真实key，如果有重复，Table.GetInfo 中的key 为 kclass.qualifiedName
+private fun DB<*>.unBinding(name: String): String {
+  return this.name2binding[name]?.qualifiedName?:name
+}
+
+fun DB<*>.OnOpen(table: String, kclazz: KClass<*>) {
+  if (this.opened.contains(table)) {
+    return
+  }
+
+  // todo
+}
+
 // 返回需要运行的升级数量，0 表示不需要升级
 // 如果返回的不为0，则在后续的流程中必须执行 OnUpgrade
 private fun DB<*>.OnOpen(): Int {
@@ -313,7 +353,10 @@ private fun DB<*>.OnOpen(): Int {
 
   val allMigrations = emptyList<MInfo>().toMutableList()
   for (i in 0 until allTables.size) {
-    val nowV = Table.GetInfo(allTables[i])?.Version ?: continue
+    val nowV = Table.GetInfo(this.unBinding(allTables[i]))?.Version ?: continue
+    // 能找到的 都是opened
+    this.opened.add(allTables[i])
+
     if (nowV == oldVersions[i]) continue
     val res = Table.GetMigrations(allTables[i], oldVersions[i], nowV)
       ?: throw SQLException("can NOT migrate table(${allTables[i]}) from ${oldVersions[i]} to $nowV")
@@ -323,7 +366,7 @@ private fun DB<*>.OnOpen(): Int {
   val allAlterSQLs = emptyList<String>().toMutableList()
   for (table in allTables) {
     val oldColumns = this.TableColumnNames(table)
-    val nowColumns = Table.GetInfo(table)?.Columns ?: emptyMap()
+    val nowColumns = Table.GetInfo(this.unBinding(table))?.Columns ?: emptyMap()
     val needAdders = nowColumns - oldColumns.toSet()
     for ((_, adder) in needAdders) {
       allAlterSQLs += adder
@@ -333,7 +376,7 @@ private fun DB<*>.OnOpen(): Int {
   val allAddIndexes = emptyList<String>().toMutableList()
   val oldIndexNames = this.AllIndexes().toSet()
   for (table in allTables) {
-    val nowIndexes = Table.GetInfo(table)?.Indexes ?: emptyMap()
+    val nowIndexes = Table.GetInfo(this.unBinding(table))?.Indexes ?: emptyMap()
     val needAdders = nowIndexes - oldIndexNames
     for ((_, adder) in needAdders) {
       allAddIndexes += adder
@@ -344,7 +387,7 @@ private fun DB<*>.OnOpen(): Int {
   return allMigrations.size + allAlterSQLs.size + allAddIndexes.size
 }
 
-private fun DB<*>.OnUpgrade(onProgress: (Int)->Unit = {}) {
+private fun DB<*>.OnUpgrade(onProgress: (Int) -> Unit = {}) {
   val count = this.uContext.allMigrations.size +
     this.uContext.allAlterSQLs.size + this.uContext.allAddIndexes.size
   var done = 0
@@ -375,7 +418,7 @@ private fun DB<*>.OnUpgrade(onProgress: (Int)->Unit = {}) {
     val allAlterSQLs = emptyList<String>().toMutableList()
     for (table in this.uContext.allTables) {
       val oldColumns = this.TableColumnNames(table)
-      val nowColumns = Table.GetInfo(table)?.Columns ?: emptyMap()
+      val nowColumns = Table.GetInfo(this.unBinding(table))?.Columns ?: emptyMap()
       val needAdders = nowColumns - oldColumns.toSet()
       for ((_, adder) in needAdders) {
         allAlterSQLs += adder

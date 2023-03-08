@@ -1,10 +1,19 @@
 package com.github.xpwu.ktdbtable
 
-fun <T> User.Companion.TableName(db: DB<*>): String {
-  if (!db.Exist(userTableName)) {
+fun User.Companion.TableNameIn(db: DB<*>): String {
+  val name = db.Name(User::class)?: userTableName
+
+  if (!db.Exist(name)) {
     User.CreateTableIn(db)
+  } else {
+    db.OnOpen(name, User::class)
   }
-  return userTableName
+
+  return name
+}
+
+fun User.Companion.Binding(): TableBinding {
+  return MakeBinding(User::class, userTableName)
 }
 
 val User.Companion.In
