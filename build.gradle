@@ -26,3 +26,7 @@ allprojects {
     mavenCentral()
   }
 }
+repositories {
+  mavenCentral()
+}
+
