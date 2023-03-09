@@ -8,12 +8,15 @@ import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Messager
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
+import javax.annotation.processing.SupportedSourceVersion
+import javax.lang.model.SourceVersion
 import javax.lang.model.element.AnnotationMirror
 import javax.lang.model.element.AnnotationValue
 import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
+@SupportedSourceVersion(SourceVersion.RELEASE_7)
 @AutoService(Processor::class)
 class Processor : AbstractProcessor() {
   private var logger: Logger = Logger(object :Messager{
@@ -30,16 +33,13 @@ class Processor : AbstractProcessor() {
 
   override fun getSupportedAnnotationTypes(): Set<String> {
     val annotations: MutableSet<String> = LinkedHashSet()
-    annotations.add(Column::class.qualifiedName as String)
-    annotations.add(Index::class.qualifiedName as String)
-    annotations.add(Table::class.qualifiedName as String)
+    annotations.add(Column::class.qualifiedName!!)
+    annotations.add(Index::class.qualifiedName!!)
+    annotations.add(Table::class.qualifiedName!!)
     return annotations
   }
 
-  override fun process(
-    annotations: MutableSet<out TypeElement>?,
-    roundEnv: RoundEnvironment?
-  ): Boolean {
+  override fun process(annotations: MutableSet<out TypeElement>?, roundEnv: RoundEnvironment?): Boolean {
     TODO("Not yet implemented")
   }
 }
