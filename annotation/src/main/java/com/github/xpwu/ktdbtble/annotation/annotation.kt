@@ -26,7 +26,12 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  *
  * TYPE 根据字段定义自动推断
  *
- * NOT NULL 通过属性的定义是否有option自动判断
+ * Byte, Short, Int, Long  => INTEGER
+ * Boolean => INTEGER ( true -> 1 ; false -> 0 )
+ * String => TEXT
+ * Float, Double => REAL
+ * ByteArray, Array<Byte> => BLOB
+ * 其他类型会报错  todo 支持自定义的转换函数
  *
  * DEFAULT 通过属性定义时的默认值自动获取
  *
@@ -36,9 +41,12 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  *
  * @param name: 如果为"_"，则忽略此字段
  *
- * @param primaryKey PRIMARY Key 约束。MULTI_约束的顺序与字段的定义的顺序一致
+ *   https://www.sqlite.org/lang_createtable.html
+ * @param primaryKey PRIMARY Key 约束，同时也必须是NOT NULL，字段不能是 option 的。MULTI_约束的顺序与sequence定义的顺序一致
  *
- * @param notNull NOT NULL, 如果属性是option的定义，notNull必须为false，即时设定notNull为true，该设置也不生效
+ * @param notNull NOT NULL, 如果属性是 option 的定义，notNull必须为false，即使设定notNull为true，该设置也不生效。
+ *
+ * @param sequence PRIMARY KEY 约束的顺序，只要相对有大小比较就行，并不严格要求数字是连续的
  *
  */
 @Target(AnnotationTarget.PROPERTY)
@@ -48,15 +56,16 @@ annotation class Column(
   val name: String,
   val primaryKey: PrimaryKey = PrimaryKey.FALSE,
   val notNull: Boolean = false,
+  val sequence:Int = 0
 )
 
 // todo   AUTOINCREMENT 只能与int 结合使用
 
 enum class PrimaryKey(val result:String) {
   FALSE(""), MULTI(""), MULTI_DESC("DESC"),
-  ONLY_ONE("PRIMARY KEY"), ONLY_ONE_DESC("PRIMARY KEY DESC"),
-  ONLY_ONE_AUTO_INC("PRIMARY KEY AUTOINCREMENT"),
-  ONLY_ONE_AUTO_INC_DESC("PRIMARY KEY DESC AUTOINCREMENT"),
+  ONLY_ONE("PRIMARY KEY NOT NULL"), ONLY_ONE_DESC("PRIMARY KEY DESC NOT NULL"),
+  ONLY_ONE_AUTO_INC("PRIMARY KEY AUTOINCREMENT NOT NULL"),
+  ONLY_ONE_AUTO_INC_DESC("PRIMARY KEY DESC AUTOINCREMENT NOT NULL"),
 }
 
 /**
@@ -64,13 +73,19 @@ enum class PrimaryKey(val result:String) {
  *
  * @param name: 1、如果设置为""，则为 tableName_columnName;
  *              2、如果不是默认值，name相同的一起形成联合索引，联合索引的名字为tableName_name
- *              3、联合索引的顺序与字段的定义的顺序一致。
+ *              3、联合索引的顺序与sequence定义的顺序一致。
  *
  * @param unique
  *
- * @param desc
+ * @param desc DESC
+ *
+ * @param sequence 联合索引的顺序，只要相对有大小比较就行，并不严格要求数字是连续的
  *
  */
-
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.BINARY)
 @Repeatable
-annotation class Index(val unique:Boolean = false, val name: String = "", val desc:Boolean = false)
+annotation class Index(val unique:Boolean = false,
+                       val name: String = "",
+                       val desc:Boolean = false,
+                       val sequence:Int = 0)
