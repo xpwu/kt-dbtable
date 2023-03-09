@@ -9,8 +9,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.reflect.KClass
 
 interface DBInner {
-  val Path: String
-
   fun Query(query: String, bindArgs: Array<String>?): Cursor
   fun Insert(table: String, conflictAlgorithm: Int, values: ContentValues): Long
   fun ExecSQL(sql: String)
@@ -79,7 +77,6 @@ class DB<T>(internal val dber: DBer<T>, tablesBinding: ArrayList<TableBinding>,
 }
 
 class SQLiteAdapter(override val UnderlyingDB: SQLiteDatabase) : DBer<SQLiteDatabase> {
-  override val Path: String = UnderlyingDB.path
   override fun ExecSQL(sql: String) {
     UnderlyingDB.execSQL(sql)
   }
@@ -107,12 +104,14 @@ class SQLiteAdapter(override val UnderlyingDB: SQLiteDatabase) : DBer<SQLiteData
 
 class SupportSQLiteAdapter(override val UnderlyingDB: SupportSQLiteDatabase) :
   DBer<SupportSQLiteDatabase> {
-  override val Path: String = UnderlyingDB.path
   override fun ExecSQL(sql: String) {
     UnderlyingDB.execSQL(sql)
   }
 
   override fun Query(query: String, bindArgs: Array<String>?): Cursor {
+    if (bindArgs == null) {
+      return UnderlyingDB.query(query)
+    }
     return UnderlyingDB.query(query, bindArgs)
   }
 
