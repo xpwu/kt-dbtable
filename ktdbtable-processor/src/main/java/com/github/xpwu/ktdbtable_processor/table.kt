@@ -2,29 +2,41 @@ package com.github.xpwu.ktdbtable_processor
 
 import com.github.xpwu.ktdbtble.annotation.Column
 import com.github.xpwu.ktdbtble.annotation.Index
+import com.github.xpwu.ktdbtble.annotation.PrimaryKey
 import javax.lang.model.element.TypeElement
-import javax.lang.model.type.TypeKind
-import javax.lang.model.type.TypeMirror
 
 class TableInfo(
   val Name: String,
   val Version: Int,
-  val Type: TypeElement
-) {
-  val Test: String = ""
-  var TestInt: Int = 9
-  var TestUInt: UInt = 9U
-  val ByteA: ByteArray = ByteArray(0)
-  val UByteA: UByteArray = UByteArray(0)
-  val TestArray: Array<Byte> = arrayOf()
-  var TestArrayNull: Array<Byte>? = arrayOf()
-}
+  val Type: TypeElement,
+  val Columns: ArrayList<ColumnInfo> = ArrayList(),
+)
+//{
+//  val Test: String = ""
+//  var TestInt: Int = 9
+//  var TestUInt: UInt = 9U
+//  val ByteA: ByteArray = ByteArray(0)
+//  val UByteA: UByteArray = UByteArray(0)
+//  val TestArray: Array<Byte> = arrayOf()
+//  var TestArrayNull: Array<Byte>? = arrayOf()
+//}
+
 
 enum class Type {
   TEXT,
   INTEGER,
   REAL,
-  BLOB
+  BLOB,
+}
+
+fun printTypeError(errorType: String): String {
+  return """type <${errorType}> error! Only support: 
+    Byte, Short, Int, Long (Uxxx)  => INTEGER
+    Boolean => INTEGER ( true -> 1 ; false -> 0 )
+    String => TEXT
+    Float, Double => REAL
+    ByteArray, Array<Byte> (UByte) => BLOB
+    """
 }
 
 /**
@@ -37,30 +49,23 @@ enum class Type {
  *
  */
 
-fun entity2column(type: TypeMirror): Type? {
-  if (type.kind.isPrimitive) {
-    return primitive2column[type.kind]
-  }
-
-  return complex2column[type.toString()]
-}
-
-val primitive2column = mapOf<TypeKind, Type>(
-  TypeKind.BYTE to Type.INTEGER,
-  TypeKind.SHORT to Type.INTEGER,
-  TypeKind.INT to Type.INTEGER,
-  TypeKind.LONG to Type.INTEGER,
-  TypeKind.BOOLEAN to Type.INTEGER,
-  TypeKind.FLOAT to Type.REAL,
-  TypeKind.DOUBLE to Type.REAL,
-)
-
 @OptIn(ExperimentalUnsignedTypes::class)
-val complex2column = mapOf<String, Type>(
+val entity2column = mapOf<String, Type>(
+  Int::class.java.canonicalName to Type.INTEGER,
+  UInt::class.java.canonicalName to Type.INTEGER,
+  Short::class.java.canonicalName to Type.INTEGER,
+  UShort::class.java.canonicalName to Type.INTEGER,
+  Byte::class.java.canonicalName to Type.INTEGER,
+  UByte::class.java.canonicalName to Type.INTEGER,
+  Long::class.java.canonicalName to Type.INTEGER,
+  ULong::class.java.canonicalName to Type.INTEGER,
+  Boolean::class.java.canonicalName to Type.INTEGER,
+  Float::class.java.canonicalName to Type.REAL,
+  Double::class.java.canonicalName to Type.REAL,
   String::class.java.canonicalName to Type.TEXT,
   ByteArray::class.java.canonicalName to Type.BLOB,
-  Array<Byte>::class.java.canonicalName to Type.BLOB,
   UByteArray::class.java.canonicalName to Type.BLOB,
+  Array<Byte>::class.java.canonicalName to Type.BLOB,
   Array<UByte>::class.java.canonicalName to Type.BLOB,
 )
 
@@ -68,5 +73,195 @@ class ColumnInfo(
   val Typ: Type,
   val FieldName: String,
   val ColumnAnno: Column,
-  val IndexAnnotations: ArrayList<Index>,
-)
+  val NotNull: Boolean,
+  val IndexAnnotations: Array<Index>,
+) {
+  companion object
+}
+
+fun ColumnInfo.outField(tableName: String): String {
+  return """
+val ${tableName}.Companion.${this.FieldName}
+  get() = Column("${this.ColumnAnno.name}")
+  """
+}
+
+fun isAutoincrement(key: PrimaryKey): Boolean {
+  return key == PrimaryKey.ONLY_ONE_AUTO_INC || key == PrimaryKey.ONLY_ONE_AUTO_INC_DESC
+}
+
+fun primaryKey(key: PrimaryKey): String {
+  if (key == PrimaryKey.MULTI || key == PrimaryKey.MULTI_DESC) {
+    return ""
+  }
+
+  return key.toString()
+}
+
+fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
+  if (isAutoincrement(this.ColumnAnno.primaryKey) && this.Typ != Type.INTEGER) {
+    errLog("${this.FieldName} is AUTOINCREMENT, but whose type is not INTEGER")
+    return ""
+  }
+
+  val primaryKey = primaryKey(this.ColumnAnno.primaryKey)
+
+  val notNull = if (this.NotNull && this.ColumnAnno.notNull) "NOT NULL" else ""
+
+  if (primaryKey.isNotEmpty() && notNull.isEmpty()) {
+    errLog("${this.FieldName} is PRIMARY KEY, but it is not NOT NULL")
+    return ""
+  }
+
+  return "${this.ColumnAnno.name} $primaryKey $notNull DEFAULT ${this.ColumnAnno.defaultValue}"
+}
+
+// "ALTER TABLE table_name ADD COLUMN ..."
+typealias AlterSQL = String
+
+fun ColumnInfo.alter(table:String, errLog: (String) -> Unit): AlterSQL {
+  return "ALTER TABLE $table ADD COLUMN ${this.constraint(errLog)}"
+}
+
+// name => ("UNIQUE", column, seq)
+fun ColumnInfo.index(table:String): Map<String, Triple<String, String, Int>> {
+  val ret = emptyMap<String, Triple<String, String, Int>>().toMutableMap()
+  for (indexA in this.IndexAnnotations) {
+    val name = indexA.name.ifEmpty { table + this.ColumnAnno.name }
+    val unique = if (indexA.unique) "UNIQUE" else ""
+    val desc = if (indexA.desc) "DESC" else ""
+    val column = "${this.ColumnAnno.name} $desc"
+    ret[name] = Triple(unique, column, indexA.sequence)
+  }
+
+  return ret
+}
+
+typealias IndexName = String
+// "CREATE INDEX IF NOT EXISTS ..."
+typealias IndexSQL = String
+
+// [("UNIQUE", column, seq)] to "(column1, column2, column3, ...)"
+fun ArrayList<Triple<String, String, Int>>.toString(errLog: (String) -> Unit): String {
+  if (this.isEmpty()) return ""
+
+  this.sortWith{ triple: Triple<String, String, Int>, triple2: Triple<String, String, Int> ->
+    return@sortWith triple.third - triple2.third
+  }
+
+  val (unique, column, _) = this[0]
+  val builder = StringBuilder()
+  builder.append("(")
+  builder.append(column)
+  for (i in 1 until this.size) {
+    if (unique != this[i].first) {
+      errLog("unique flags are not the same with each other")
+      return ""
+    }
+
+    builder.append(", ")
+    builder.append(column)
+  }
+  builder.append(")")
+
+  return builder.toString()
+}
+
+// name =>  CREATE $UNIQUE INDEX IF NOT EXISTS ...
+fun TableInfo.index(errLog: (String) -> Unit): Map<IndexName, IndexSQL> {
+  val ret = emptyMap<IndexName, IndexSQL>().toMutableMap()
+  val all = emptyMap<IndexName, ArrayList<Triple<String, String, Int>>>().toMutableMap()
+
+  for (column in this.Columns) {
+    // name => ("UNIQUE", column, seq)
+    val col = column.index(this.Name)
+    for ((key, value) in col) {
+      var item = all[key]
+      if (item == null) {
+        item = ArrayList()
+        all[key] = item
+      }
+      item.add(value)
+    }
+  }
+
+  for ((indexName, value) in all) {
+    if (value.isEmpty()) continue
+    val con = value.toString { str -> errLog("$indexName: $str") }
+    ret[indexName] = "CREATE ${value[0].first} INDEX IF NOT EXISTS $indexName ON ${this.Name} $con"
+  }
+
+  return ret
+}
+
+typealias ColumnName = String
+
+fun TableInfo.columns(logger: Logger): Map<ColumnName, AlterSQL> {
+  val ret = emptyMap<ColumnName, AlterSQL>().toMutableMap()
+  for (col in this.Columns) {
+    ret[col.ColumnAnno.name] = col.alter(this.Name) { str -> logger.error(this.Type, "${this.Name}: $str") }
+  }
+  return ret
+}
+
+typealias TablePrimaryConstraint = String
+
+// CREATE TABLE IF NOT EXISTS
+fun TableInfo.sqlForCreating(logger: Logger): String {
+  val mulPrimaryKey = ArrayList<Pair<TablePrimaryConstraint, Int>>()
+  var lastPrimaryKey = PrimaryKey.FALSE
+  val builder = StringBuilder()
+  builder.append("CREATE TABLE IF NOT EXISTS ${this.Name}(")
+  if (this.Columns.size == 0) {
+    return ""
+  }
+
+  builder.append(this.Columns[0].constraint { str -> logger.error(this.Type, "${this.Name}: $str") })
+  for (i in 1 until this.Columns.size) {
+    builder.append(", ")
+    builder.append(this.Columns[i].constraint { str -> logger.error(this.Type, "${this.Name}: $str") })
+    if (this.Columns[i].ColumnAnno.primaryKey != PrimaryKey.FALSE) {
+      if (lastPrimaryKey != PrimaryKey.FALSE
+        && lastPrimaryKey != PrimaryKey.MULTI_DESC
+        && lastPrimaryKey != PrimaryKey.MULTI ) {
+
+        logger.error(this.Type, "${this.Name}: PrimaryKey.ONLY_ONE_xx too much")
+        return ""
+      }
+      lastPrimaryKey = this.Columns[i].ColumnAnno.primaryKey
+
+      if (lastPrimaryKey == PrimaryKey.MULTI_DESC || lastPrimaryKey == PrimaryKey.MULTI) {
+        mulPrimaryKey.add(Pair("${this.Columns[i].ColumnAnno.name} $lastPrimaryKey", this.Columns[i].ColumnAnno.sequence))
+      }
+    }
+  }
+
+  mulPrimaryKey.sortWith { _1, _2 -> _1.second - _2.second }
+  if (mulPrimaryKey.size != 0) {
+    builder.append(", PRIMARY KEY(")
+  }
+  builder.append(mulPrimaryKey[0].first)
+  for (i in 1 until mulPrimaryKey.size) {
+    builder.append(", ")
+    builder.append(mulPrimaryKey[i].first)
+  }
+  builder.append(")")
+
+  // --> table_name(
+  builder.append(")")
+
+  return builder.toString()
+}
+
+// todo init data
+
+// todo migrator
+
+fun TableInfo.migrator(): String {
+
+}
+
+fun TableInfo.out(): String {
+  
+}
+

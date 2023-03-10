@@ -24,6 +24,9 @@ val User.Companion.Id
 val User.Companion.Name
   get() = Column("name")
 
+fun User.Companion.TableInfo(): TableInfo {
+  return TableInfo(userTableVersion)
+}
 
 fun User.Companion.CreateTableIn(db: DB<*>) {
   val tableName = db.Name(User::class) ?: userTableName

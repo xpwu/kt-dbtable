@@ -64,9 +64,9 @@ annotation class Column(
 
 enum class PrimaryKey(val result:String) {
   FALSE(""), MULTI(""), MULTI_DESC("DESC"),
-  ONLY_ONE("PRIMARY KEY NOT NULL"), ONLY_ONE_DESC("PRIMARY KEY DESC NOT NULL"),
-  ONLY_ONE_AUTO_INC("PRIMARY KEY AUTOINCREMENT NOT NULL"),
-  ONLY_ONE_AUTO_INC_DESC("PRIMARY KEY DESC AUTOINCREMENT NOT NULL"),
+  ONLY_ONE("PRIMARY KEY"), ONLY_ONE_DESC("PRIMARY KEY DESC"),
+  ONLY_ONE_AUTO_INC("PRIMARY KEY AUTOINCREMENT"),
+  ONLY_ONE_AUTO_INC_DESC("PRIMARY KEY DESC AUTOINCREMENT"),
 }
 
 /**
@@ -76,7 +76,7 @@ enum class PrimaryKey(val result:String) {
  *              2、如果不是默认值，name相同的一起形成联合索引，联合索引的名字为tableName_name
  *              3、联合索引的顺序与sequence定义的顺序一致。
  *
- * @param unique
+ * @param unique  如果是联合索引，各项的 unique 设置必须一样
  *
  * @param desc DESC
  *
