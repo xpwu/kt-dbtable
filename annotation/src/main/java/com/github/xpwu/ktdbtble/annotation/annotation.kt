@@ -33,8 +33,6 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  * ByteArray, Array<Byte> => BLOB
  * 其他类型会报错  todo 支持自定义的转换函数
  *
- * DEFAULT 通过属性定义时的默认值自动获取
- *
  * UNIQUE 放入Index注解中，也方便 ALTER 的使用
  *
  * CHECK 约束：CHECK 约束确保某列中的所有值满足一定条件, 暂未支持 // todo
@@ -46,6 +44,8 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  *
  * @param notNull NOT NULL, 如果属性是 option 的定义，notNull必须为false，即使设定notNull为true，该设置也不生效。
  *
+ * @param defaultValue 以字符串的方式设置字段的默认值，设置的值在创建表时直接使用于 DEFAULT xxx 中
+ *
  * @param sequence PRIMARY KEY 约束的顺序，只要相对有大小比较就行，并不严格要求数字是连续的
  *
  */
@@ -56,6 +56,7 @@ annotation class Column(
   val name: String,
   val primaryKey: PrimaryKey = PrimaryKey.FALSE,
   val notNull: Boolean = false,
+  val defaultValue: String = "",
   val sequence:Int = 0
 )
 

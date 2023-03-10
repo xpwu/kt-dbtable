@@ -40,12 +40,13 @@ class Processor : AbstractProcessor() {
   override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
     if (annotations.isEmpty()) return false
 
-
     val tables: MutableSet<TableInfo> = emptySet<TableInfo>().toMutableSet()
 
     for (ee in roundEnv.getElementsAnnotatedWith(annotations.first())) {
-      processATable(ee as TypeElement, tables)
+      // todo:  support java class
+      if (isJavaFile(annotations.first())) continue
 
+      processATable(ee as TypeElement, tables)
     }
     return false
   }
