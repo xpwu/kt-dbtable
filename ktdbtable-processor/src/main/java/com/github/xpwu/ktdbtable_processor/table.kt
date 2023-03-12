@@ -10,17 +10,9 @@ class TableInfo(
   val Version: Int,
   val Type: TypeElement,
   val Columns: ArrayList<ColumnInfo> = ArrayList(),
+  // default Migrators() and Initializer()
+  var MigInit: Pair<String, String> = Pair("", "")
 )
-//{
-//  val Test: String = ""
-//  var TestInt: Int = 9
-//  var TestUInt: UInt = 9U
-//  val ByteA: ByteArray = ByteArray(0)
-//  val UByteA: UByteArray = UByteArray(0)
-//  val TestArray: Array<Byte> = arrayOf()
-//  var TestArrayNull: Array<Byte>? = arrayOf()
-//}
-
 
 enum class Type {
   TEXT,
@@ -75,15 +67,57 @@ class ColumnInfo(
   val ColumnAnno: Column,
   val NotNull: Boolean,
   val IndexAnnotations: Array<Index>,
-) {
-  companion object
+)
+
+fun ColumnInfo.outField(tableClass: String): String {
+  return """
+    val ${tableClass}.Companion.${this.FieldName}
+      get() = Column("${this.ColumnAnno.name}")
+  """.trimIndent()
 }
 
-fun ColumnInfo.outField(tableName: String): String {
+fun TableInfo.allColumnsFun(): String {
+  val tableClass = this.Type.simpleName.toString()
+
+  val filedBuilder = StringBuilder()
+  for (c in this.Columns) {
+    filedBuilder.append(c.FieldName).append(", ")
+  }
+
   return """
-val ${tableName}.Companion.${this.FieldName}
-  get() = Column("${this.ColumnAnno.name}")
-  """
+    fun ${tableClass}.Companion.AllColumns(): List<Column> {
+      return listOf(
+        $filedBuilder
+      )
+    }
+  """.trimIndent()
+}
+
+fun TableInfo.toContentValuesFun(): String {
+  val tableClass = this.Type.simpleName.toString()
+
+  val builder = StringBuilder()
+  for (c in this.Columns) {
+    builder.append("""
+      ${tableClass}.Id -> cv.put(column.toString(), this.Id)
+    """.trimIndent())
+  }
+
+  return """
+    fun ${tableClass}.ToContentValues(columns: List<Column> = ${tableClass}.AllColumns()): ContentValues {
+      val cv = ContentValues(columns.size)
+      for (column in columns) {
+        when(column) {
+          $builder
+          else -> {
+            throw IllegalArgumentException("Illegal column ${'$'}column for $tableClass")
+          }
+        }
+      }
+
+      return cv
+    }
+  """.trimIndent()
 }
 
 fun isAutoincrement(key: PrimaryKey): Boolean {
@@ -119,15 +153,15 @@ fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
 // "ALTER TABLE table_name ADD COLUMN ..."
 typealias AlterSQL = String
 
-fun ColumnInfo.alter(table:String, errLog: (String) -> Unit): AlterSQL {
+fun ColumnInfo.alter(table: String, errLog: (String) -> Unit): AlterSQL {
   return "ALTER TABLE $table ADD COLUMN ${this.constraint(errLog)}"
 }
 
 // name => ("UNIQUE", column, seq)
-fun ColumnInfo.index(table:String): Map<String, Triple<String, String, Int>> {
+fun ColumnInfo.index(table: String): Map<String, Triple<String, String, Int>> {
   val ret = emptyMap<String, Triple<String, String, Int>>().toMutableMap()
   for (indexA in this.IndexAnnotations) {
-    val name = indexA.name.ifEmpty { table + this.ColumnAnno.name }
+    val name = indexA.name.ifEmpty { table + "_" + this.ColumnAnno.name }
     val unique = if (indexA.unique) "UNIQUE" else ""
     val desc = if (indexA.desc) "DESC" else ""
     val column = "${this.ColumnAnno.name} $desc"
@@ -145,7 +179,7 @@ typealias IndexSQL = String
 fun ArrayList<Triple<String, String, Int>>.toString(errLog: (String) -> Unit): String {
   if (this.isEmpty()) return ""
 
-  this.sortWith{ triple: Triple<String, String, Int>, triple2: Triple<String, String, Int> ->
+  this.sortWith { triple: Triple<String, String, Int>, triple2: Triple<String, String, Int> ->
     return@sortWith triple.third - triple2.third
   }
 
@@ -196,10 +230,11 @@ fun TableInfo.index(errLog: (String) -> Unit): Map<IndexName, IndexSQL> {
 
 typealias ColumnName = String
 
-fun TableInfo.columns(logger: Logger): Map<ColumnName, AlterSQL> {
+fun TableInfo.alterColumns(logger: Logger): Map<ColumnName, AlterSQL> {
   val ret = emptyMap<ColumnName, AlterSQL>().toMutableMap()
   for (col in this.Columns) {
-    ret[col.ColumnAnno.name] = col.alter(this.Name) { str -> logger.error(this.Type, "${this.Name}: $str") }
+    ret[col.ColumnAnno.name] =
+      col.alter(this.Name) { str -> logger.error(this.Type, "${this.Name}: $str") }
   }
   return ret
 }
@@ -216,14 +251,25 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
     return ""
   }
 
-  builder.append(this.Columns[0].constraint { str -> logger.error(this.Type, "${this.Name}: $str") })
+  builder.append(this.Columns[0].constraint { str ->
+    logger.error(
+      this.Type,
+      "${this.Name}: $str"
+    )
+  })
   for (i in 1 until this.Columns.size) {
     builder.append(", ")
-    builder.append(this.Columns[i].constraint { str -> logger.error(this.Type, "${this.Name}: $str") })
+    builder.append(this.Columns[i].constraint { str ->
+      logger.error(
+        this.Type,
+        "${this.Name}: $str"
+      )
+    })
     if (this.Columns[i].ColumnAnno.primaryKey != PrimaryKey.FALSE) {
       if (lastPrimaryKey != PrimaryKey.FALSE
         && lastPrimaryKey != PrimaryKey.MULTI_DESC
-        && lastPrimaryKey != PrimaryKey.MULTI ) {
+        && lastPrimaryKey != PrimaryKey.MULTI
+      ) {
 
         logger.error(this.Type, "${this.Name}: PrimaryKey.ONLY_ONE_xx too much")
         return ""
@@ -231,7 +277,12 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
       lastPrimaryKey = this.Columns[i].ColumnAnno.primaryKey
 
       if (lastPrimaryKey == PrimaryKey.MULTI_DESC || lastPrimaryKey == PrimaryKey.MULTI) {
-        mulPrimaryKey.add(Pair("${this.Columns[i].ColumnAnno.name} $lastPrimaryKey", this.Columns[i].ColumnAnno.sequence))
+        mulPrimaryKey.add(
+          Pair(
+            "${this.Columns[i].ColumnAnno.name} $lastPrimaryKey",
+            this.Columns[i].ColumnAnno.sequence
+          )
+        )
       }
     }
   }
@@ -253,15 +304,52 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
   return builder.toString()
 }
 
-// todo init data
+fun Map<String, String>.toLiteral(): String {
+  val builder = StringBuilder()
+  builder.append(
+    """
+      mapOf(
+    """.trimIndent()
+  )
 
-// todo migrator
+  for ((key, value) in this) {
+    builder.append("$key to $value\n")
+  }
 
-fun TableInfo.migrator(): String {
+  builder.append(
+    """
+      )
+    """.trimIndent()
+  )
 
+  return builder.toString()
 }
 
-fun TableInfo.out(): String {
-  
+fun TableInfo.allIndexFun(logger: Logger): String {
+  val tableClass = this.Type.simpleName.toString()
+  return """
+    typealias IndexName = String
+    // "CREATE INDEX IF NOT EXISTS ..."
+    typealias IndexSQL = String
+    
+    private fun ${tableClass}.Companion.allIndex(): Map<IndexName, IndexSQL> {
+      return ${this.index { str -> logger.error(this.Type, "${this.Name}: $str") }.toLiteral()}
+    }
+  """.trimIndent()
+}
+
+fun TableInfo.out(logger: Logger): String {
+//  val fullName = this.Type.qualifiedName.toString()
+  val tableClass = this.Type.simpleName.toString()
+
+  val column = this.alterColumns(logger).toLiteral()
+  return """
+    fun ${tableClass}.Companion.TableInfo(): TableInfo {
+      return TableInfo(tableVersion, ${tableClass}.Migrators(), 
+        ${tableClass}.allIndex(), 
+        $column
+      )
+    }
+  """.trimIndent()
 }
 

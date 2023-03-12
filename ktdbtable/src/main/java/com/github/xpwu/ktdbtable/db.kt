@@ -9,6 +9,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.reflect.KClass
 
 interface DBInner {
+  companion object {
+    // 每个值的意义与 android.database.sqlite.SQLiteDatabase 中的意义一样
+    // 在本接口的 Insert 实现中，需要实现 CONFLICT_REPLACE 的冲突定义
+//    val CONFLICT_NONE = 0
+//    val CONFLICT_ROLLBACK = 1
+//    val CONFLICT_ABORT = 2
+//    val CONFLICT_FAIL = 3
+//    val CONFLICT_IGNORE = 4
+    val CONFLICT_REPLACE = 5
+  }
+
   fun Query(query: String, bindArgs: Array<String>?): Cursor
   fun Insert(table: String, conflictAlgorithm: Int, values: ContentValues): Long
   fun ExecSQL(sql: String)
@@ -301,7 +312,7 @@ fun DB<*>.SetVersion(table: String, version: Int) {
   val cv = ContentValues(2)
   cv.put(XMasterTblNameColumn, table)
   cv.put(XMasterTblVersionColumn, version)
-  this.dber.Insert(XMasterTable, SQLiteDatabase.CONFLICT_REPLACE, cv)
+  this.dber.Insert(XMasterTable, DBInner.CONFLICT_REPLACE, cv)
 }
 
 fun DB<*>.TableColumnNames(table: String): ArrayList<String> {

@@ -34,6 +34,6 @@ fun User.Companion.Update(db: DB<SQLiteDatabase>) {
 
 
 fun User.Companion.Initializer(): Collection<User> {
-  return listOf()
+  return emptyList()
 }
 

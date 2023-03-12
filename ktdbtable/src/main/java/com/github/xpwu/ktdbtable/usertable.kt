@@ -1,9 +1,10 @@
 package com.github.xpwu.ktdbtable
 
-import android.database.sqlite.SQLiteDatabase
+import android.content.ContentValues
+import androidx.core.content.contentValuesOf
 
 fun User.Companion.TableNameIn(db: DB<*>): String {
-  val name = db.Name(User::class) ?: userTableName
+  val name = db.Name(User::class) ?: tableName
 
   if (!db.Exist(name)) {
     User.CreateTableIn(db)
@@ -14,10 +15,6 @@ fun User.Companion.TableNameIn(db: DB<*>): String {
   return name
 }
 
-fun User.Companion.Binding(): TableBinding {
-  return MakeBinding(User::class, userTableName)
-}
-
 val User.Companion.Id
   get() = Column("id")
 
@@ -25,18 +22,22 @@ val User.Companion.Name
   get() = Column("name")
 
 fun User.Companion.TableInfo(): TableInfo {
-  return TableInfo(userTableVersion)
+  return TableInfo(tableVersion, User.Migrators())
 }
 
-fun User.Companion.CreateTableIn(db: DB<*>) {
-  val tableName = db.Name(User::class) ?: userTableName
+fun User.Companion.Binding(): TableBinding {
+  return MakeBinding(User::class, tableName)
+}
+
+private fun User.Companion.CreateTableIn(db: DB<*>) {
+  val tableName = db.Name(User::class) ?: tableName
   db.OnlyForInitTable {
     it.BeginTransaction()
     try {
-//      it.ExecSQL("CREATE TABLE IF NOT EXISTS $tableName($columnname $type $primarykey $DESC $AUTOINCREMENT $notnull $defaultvalue, $primarykeyT$($columnname $DESC, $columnname $DESC $) )")
-//      it.ExecSQL("CREATE $UNIQUE INDEX IF NOT EXISTS ${tableName}_$columnname ON ${tableName}($columnname $DESC)")
-//      db.SetVersion(tableName, userTableVersion)
-//      it.Insert(tableName, SQLiteDatabase.CONFLICT_IGNORE, )
+      it.ExecSQL("CREATE TABLE IF NOT EXISTS xxx")
+      it.ExecSQL("CREATE xxx INDEX IF NOT EXISTS xxx")
+      db.SetVersion(tableName, tableVersion)
+      it.Insert(tableName, DBInner.CONFLICT_REPLACE, contentValuesOf())
       it.SetTransactionSuccessful()
     } finally {
       it.EndTransaction()
@@ -44,11 +45,26 @@ fun User.Companion.CreateTableIn(db: DB<*>) {
   }
 }
 
-private const val userTableName = "user"
-private const val userTableVersion = 0
+fun User.Companion.AllColumns(): List<Column> {
+  return listOf(
+    Id, Name,
+  )
+}
 
+fun User.ToContentValues(columns: List<Column> = User.AllColumns()): ContentValues {
+  val cv = ContentValues(columns.size)
+  for (column in columns) {
+    when(column) {
+      User.Id -> cv.put(column.toString(), this.Id)
+      User.Name -> cv.put(column.toString(), this.Name)
+      else -> {
+        throw IllegalArgumentException("Illegal column $column for User")
+      }
+    }
+  }
 
+  return cv
+}
 
-
-
-
+private const val tableName = "user"
+private const val tableVersion = 0
