@@ -1,5 +1,9 @@
 package com.github.xpwu.ktdbtable
 
+import com.github.xpwu.ktdbtble.annotation.Column
+import com.github.xpwu.ktdbtble.annotation.Index
+import com.github.xpwu.ktdbtble.annotation.PrimaryKey
+import com.github.xpwu.ktdbtble.annotation.Table
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -20,4 +24,16 @@ class ExampleUnitTest {
     assertEquals(Version::class.qualifiedName, "com.github.xpwu.ktdbtable.Version")
     assertEquals(Collection::class.qualifiedName, "kotlin.collections.Collection")
   }
+}
+
+@Table("user")
+class User {
+  companion object
+
+  @Column("id")
+  @Index
+  @Index
+  var Id: String? = null
+  @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
+  var Name: String = "xp"
 }
