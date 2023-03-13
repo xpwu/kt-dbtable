@@ -214,21 +214,21 @@ fun Processor.outATable(tableInfo: TableInfo) {
     
     $columns
     
-    ${tableInfo.allColumnsFun()}
+    ${tableInfo.allColumnsFun().align("    ")}
     
     fun ${tableClass}.Companion.Binding(): TableBinding {
       return MakeBinding(${tableClass}::class, tableName)
     }
     
-    ${tableInfo.out(logger)}
+    ${tableInfo.out(logger).align("    ")}
     
-    ${tableInfo.MigInit.first}
+    ${tableInfo.MigInit.first.align("    ")}
     
-    ${tableInfo.MigInit.second}
+    ${tableInfo.MigInit.second.align("    ")}
     
-    ${tableInfo.allIndexFun(logger)}
+    ${tableInfo.allIndexFun(logger).align("    ")}
     
-    ${tableInfo.toContentValuesFun()}
+    ${tableInfo.toContentValuesFun().align("    ")}
     
     private fun ${tableClass}.Companion.CreateTableIn(db: DB<*>) {
       val tableName = db.Name(${tableClass}::class) ?: tableName
@@ -241,7 +241,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
           }
           db.SetVersion(tableName, tableVersion)
           for (init in ${tableClass}.Initializer()) {
-            it.Insert(tableName, DBInner.CONFLICT_IGNORE, init.ToContentValues())
+            it.Replace(tableName, init.ToContentValues())
           }
           it.SetTransactionSuccessful()
         } finally {

@@ -87,7 +87,7 @@ fun TableInfo.allColumnsFun(): String {
   return """
     fun ${tableClass}.Companion.AllColumns(): List<Column> {
       return listOf(
-        $filedBuilder
+        ${filedBuilder.toString().align("        ")}
       )
     }
   """.trimIndent()
@@ -108,7 +108,7 @@ fun TableInfo.toContentValuesFun(): String {
       val cv = ContentValues(columns.size)
       for (column in columns) {
         when(column) {
-          $builder
+          ${builder.toString().align("          ")}
           else -> {
             throw IllegalArgumentException("Illegal column ${'$'}column for $tableClass")
           }
@@ -313,7 +313,7 @@ fun Map<String, String>.toLiteral(): String {
   )
 
   for ((key, value) in this) {
-    builder.append("$key to $value\n")
+    builder.append("  $key to $value\n")
   }
 
   builder.append(
@@ -333,7 +333,7 @@ fun TableInfo.allIndexFun(logger: Logger): String {
     typealias IndexSQL = String
     
     private fun ${tableClass}.Companion.allIndex(): Map<IndexName, IndexSQL> {
-      return ${this.index { str -> logger.error(this.Type, "${this.Name}: $str") }.toLiteral()}
+      return ${this.index { str -> logger.error(this.Type, "${this.Name}: $str") }.toLiteral().align("      ")}
     }
   """.trimIndent()
 }
@@ -347,7 +347,7 @@ fun TableInfo.out(logger: Logger): String {
     fun ${tableClass}.Companion.TableInfo(): TableInfo {
       return TableInfo(tableVersion, ${tableClass}.Migrators(), 
         ${tableClass}.allIndex(), 
-        $column
+        ${column.align("        ")}
       )
     }
   """.trimIndent()

@@ -3,8 +3,6 @@ package com.github.xpwu.ktdbtable
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.SQLException
-import android.database.sqlite.SQLiteDatabase
-import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.reflect.KClass
 
@@ -17,11 +15,11 @@ interface DBInner {
 //    val CONFLICT_ABORT = 2
 //    val CONFLICT_FAIL = 3
 //    val CONFLICT_IGNORE = 4
-    val CONFLICT_REPLACE = 5
+//    const val CONFLICT_REPLACE = 5
   }
 
   fun Query(query: String, bindArgs: Array<String>?): Cursor
-  fun Insert(table: String, conflictAlgorithm: Int, values: ContentValues): Long
+  fun Replace(table: String, values: ContentValues): Long
   fun ExecSQL(sql: String)
 
   fun BeginTransaction()
@@ -44,7 +42,7 @@ fun MakeBinding(kclazz: KClass<*>, rename: String): TableBinding {
 /**
  * @param tablesBinding 明确binding 一个 table在此db中，也可以作为某一个table在此db中的重命名
  */
-class DB<T>(internal val dber: DBer<T>, tablesBinding: ArrayList<TableBinding>,
+class DB<T>(internal val dber: DBer<T>, tablesBinding: List<TableBinding> = emptyList(),
             upgrade: Boolean = true) : UnderlyingDBer<T> by dber {
   internal val tableCache = syncTableCache()
   internal var uContext: upgradeContext = upgradeContext()
@@ -86,71 +84,6 @@ class DB<T>(internal val dber: DBer<T>, tablesBinding: ArrayList<TableBinding>,
     this.OnUpgrade(onProgress)
   }
 }
-
-class SQLiteAdapter(override val UnderlyingDB: SQLiteDatabase) : DBer<SQLiteDatabase> {
-  override fun ExecSQL(sql: String) {
-    UnderlyingDB.execSQL(sql)
-  }
-
-  override fun Query(query: String, bindArgs: Array<String>?): Cursor {
-    return UnderlyingDB.rawQuery(query, bindArgs)
-  }
-
-  override fun Insert(table: String, conflictAlgorithm: Int, values: ContentValues): Long {
-    return UnderlyingDB.insertWithOnConflict(table, null, values, conflictAlgorithm)
-  }
-
-  override fun BeginTransaction() {
-    UnderlyingDB.beginTransaction()
-  }
-
-  override fun SetTransactionSuccessful() {
-    UnderlyingDB.setTransactionSuccessful()
-  }
-
-  override fun EndTransaction() {
-    UnderlyingDB.endTransaction()
-  }
-}
-
-class SupportSQLiteAdapter(override val UnderlyingDB: SupportSQLiteDatabase) :
-  DBer<SupportSQLiteDatabase> {
-  override fun ExecSQL(sql: String) {
-    UnderlyingDB.execSQL(sql)
-  }
-
-  override fun Query(query: String, bindArgs: Array<String>?): Cursor {
-    if (bindArgs == null) {
-      return UnderlyingDB.query(query)
-    }
-    return UnderlyingDB.query(query, bindArgs)
-  }
-
-  override fun Insert(table: String, conflictAlgorithm: Int, values: ContentValues): Long {
-    return UnderlyingDB.insert(table, conflictAlgorithm, values)
-  }
-
-  override fun BeginTransaction() {
-    UnderlyingDB.beginTransaction()
-  }
-
-  override fun SetTransactionSuccessful() {
-    UnderlyingDB.setTransactionSuccessful()
-  }
-
-  override fun EndTransaction() {
-    UnderlyingDB.endTransaction()
-  }
-}
-
-
-//val sqlite = SQLiteDatabase.openOrCreateDatabase("", null)
-//
-//val db = DB(SQLiteAdapter(sqlite))
-//
-//fun a() {
-//  db.UnderlyingDB.path
-//}
 
 class syncTableCache {
   private val tableCache: MutableSet<String> = emptySet<String>().toMutableSet()
@@ -312,7 +245,7 @@ fun DB<*>.SetVersion(table: String, version: Int) {
   val cv = ContentValues(2)
   cv.put(XMasterTblNameColumn, table)
   cv.put(XMasterTblVersionColumn, version)
-  this.dber.Insert(XMasterTable, DBInner.CONFLICT_REPLACE, cv)
+  this.dber.Replace(XMasterTable, cv)
 }
 
 fun DB<*>.TableColumnNames(table: String): ArrayList<String> {

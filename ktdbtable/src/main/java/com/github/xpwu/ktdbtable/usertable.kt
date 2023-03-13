@@ -37,7 +37,7 @@ private fun User.Companion.CreateTableIn(db: DB<*>) {
       it.ExecSQL("CREATE TABLE IF NOT EXISTS xxx")
       it.ExecSQL("CREATE xxx INDEX IF NOT EXISTS xxx")
       db.SetVersion(tableName, tableVersion)
-      it.Insert(tableName, DBInner.CONFLICT_REPLACE, contentValuesOf())
+      it.Replace(tableName, contentValuesOf())
       it.SetTransactionSuccessful()
     } finally {
       it.EndTransaction()
