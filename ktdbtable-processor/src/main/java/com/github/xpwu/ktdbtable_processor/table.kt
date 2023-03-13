@@ -133,6 +133,7 @@ fun primaryKey(key: PrimaryKey): String {
 }
 
 fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
+  // AUTOINCREMENT 必须是 INTEGER
   if (isAutoincrement(this.ColumnAnno.primaryKey) && this.Typ != Type.INTEGER) {
     errLog("${this.FieldName} is AUTOINCREMENT, but whose type is not INTEGER")
     return ""

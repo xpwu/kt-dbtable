@@ -1,7 +1,7 @@
-package com.github.xpwu.ktdbtable
+package com.github.xpwu.ktdbtable.example
 
 import android.content.ContentValues
-import androidx.core.content.contentValuesOf
+import com.github.xpwu.ktdbtable.*
 
 fun User.Companion.TableNameIn(db: DB<*>): String {
   val name = db.Name(User::class) ?: tableName
@@ -37,7 +37,7 @@ private fun User.Companion.CreateTableIn(db: DB<*>) {
       it.ExecSQL("CREATE TABLE IF NOT EXISTS xxx")
       it.ExecSQL("CREATE xxx INDEX IF NOT EXISTS xxx")
       db.SetVersion(tableName, tableVersion)
-      it.Replace(tableName, contentValuesOf())
+      it.Replace(tableName, User().ToContentValues())
       it.SetTransactionSuccessful()
     } finally {
       it.EndTransaction()

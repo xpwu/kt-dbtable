@@ -1,9 +1,13 @@
-package com.github.xpwu.ktdbtable
+package com.github.xpwu.ktdbtable.example
 
 import android.database.sqlite.SQLiteDatabase
-import com.github.xpwu.ktdbtable.annotation.*
-import com.github.xpwu.ktdbtable.annotation.Column
-import com.github.xpwu.ktdbtable.annotation.Table
+import com.github.xpwu.ktdbtable.DB
+import com.github.xpwu.ktdbtable.Migration
+import com.github.xpwu.ktdbtable.Version
+import com.github.xpwu.ktdbtble.annotation.Column
+import com.github.xpwu.ktdbtble.annotation.Index
+import com.github.xpwu.ktdbtble.annotation.PrimaryKey
+import com.github.xpwu.ktdbtble.annotation.Table
 
 @Table("user")
 class User {

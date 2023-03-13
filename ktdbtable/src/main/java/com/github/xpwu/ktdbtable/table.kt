@@ -4,6 +4,7 @@ import androidx.collection.SparseArrayCompat
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
+import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.declaredMemberExtensionFunctions
 
 
@@ -62,22 +63,22 @@ data class TableInfo (
  *
  * 在项目(库)使用过程中，table不必也不应该修改已经被使用的名字。
  *
+ *
+ * 保持 kclass.qualifiedName => TableInfo 的映射是为了加快查找，而不用反射
  */
-object TableContainer{
-  val AllTables: Map<String, TableInfo> by lazy {
-    mapOf()
-  }
+open class TableContainer{
+  open val AllTables: Map<String, TableInfo> = mapOf()
 }
 
-//private val allTables = lazy {
-//  val kClass = TableContainer::class.qualifiedName
-//    ?.let { Class.forName(it + "Impl").kotlin }
-//
-//  (kClass?.createInstance() as? TableContainer)?.AllTables
-//}
+private val allTables = lazy {
+  val kClass = TableContainer::class.qualifiedName
+    ?.let { Class.forName(it + "Impl").kotlin }
+
+  (kClass?.createInstance() as? TableContainer)?.AllTables
+}
 
 fun Table.Companion.GetInfo(name: String): TableInfo? {
-  return TableContainerImpl.AllTables[name]
+  return allTables.value?.get(name)
 }
 
 // todo check path at compile

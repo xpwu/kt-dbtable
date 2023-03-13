@@ -31,7 +31,9 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  * String => TEXT
  * Float, Double => REAL
  * ByteArray, Array<Byte> => BLOB
- * 其他类型会报错  todo 支持自定义的转换函数
+ * 其他类型会报错
+ *
+ * todo 支持自定义的转换函数
  *
  * UNIQUE 放入Index注解中，也方便 ALTER 的使用
  *
@@ -59,8 +61,6 @@ annotation class Column(
   val defaultValue: String = "",
   val sequence:Int = 0
 )
-
-// todo   AUTOINCREMENT 只能与int 结合使用
 
 enum class PrimaryKey(val result:String) {
   FALSE(""), MULTI(""), MULTI_DESC("DESC"),
