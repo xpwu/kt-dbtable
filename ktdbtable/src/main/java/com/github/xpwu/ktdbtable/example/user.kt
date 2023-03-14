@@ -15,21 +15,20 @@ class User {
 
   @Column("id")
   @Index
-  @Index
   var Id: String? = null
   @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
   var Name: String = "xp"
 }
 
 
-fun User.Companion.Migrators(): Map<Version, Migration> {
-  return mapOf(
-    Version(0, 2) to {
-        db ->
-        val db = db.UnderlyingDB as? SQLiteDatabase
-        db?.endTransaction()}
-  )
-}
+//fun User.Companion.Migrators(): Map<Version, Migration> {
+//  return mapOf(
+//    Version(0, 2) to {
+//        db ->
+//        val db = db.UnderlyingDB as? SQLiteDatabase
+//        db?.endTransaction()}
+//  )
+//}
 
 fun User.Companion.Update(db: DB<SQLiteDatabase>) {
   val name = User.TableNameIn(db)
@@ -37,7 +36,7 @@ fun User.Companion.Update(db: DB<SQLiteDatabase>) {
 }
 
 
-fun User.Companion.Initializer(): Collection<User> {
-  return emptyList()
-}
+//fun User.Companion.Initializer(): Collection<User> {
+//  return emptyList()
+//}
 

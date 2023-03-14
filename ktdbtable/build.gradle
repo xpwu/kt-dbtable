@@ -3,6 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+apply plugin: 'kotlin-kapt'
+
 android {
     namespace 'com.github.xpwu.ktdbtable'
     compileSdk 33
@@ -39,7 +41,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-reflect:1.8.10"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.20-RC'
     implementation project(path: ':annotation')
-//    kapt project(path: ':ktdbtable-processor')
+    kapt project(path: ':ktdbtable-processor')
   implementation 'androidx.core:core-ktx:1.9.0'
   testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

@@ -31,8 +31,6 @@ class User {
   companion object
 
   @Column("id")
-  @Index
-  @Index
   var Id: String? = null
   @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
   var Name: String = "xp"

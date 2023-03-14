@@ -1,7 +1,9 @@
-package com.github.xpwu.ktdbtable.example
+package com.github.xpwu.ktdbtable.example.out
 
 import android.content.ContentValues
 import com.github.xpwu.ktdbtable.*
+import com.github.xpwu.ktdbtable.example.Migrators
+import com.github.xpwu.ktdbtable.example.User
 
 fun User.Companion.TableNameIn(db: DB<*>): String {
   val name = db.Name(User::class) ?: tableName
