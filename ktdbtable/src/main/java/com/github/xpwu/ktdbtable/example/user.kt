@@ -22,14 +22,14 @@ class User {
 }
 
 
-//fun User.Companion.Migrators(): Map<Version, Migration> {
-//  return mapOf(
-//    Version(0, 2) to {
-//        db ->
-//        val db = db.UnderlyingDB as? SQLiteDatabase
-//        db?.endTransaction()}
-//  )
-//}
+fun User.Companion.Migrators(): Map<Version, Migration> {
+  return mapOf(
+    Version(0, 2) to {
+        db ->
+        val db = db.UnderlyingDB as? SQLiteDatabase
+        db?.endTransaction()}
+  )
+}
 
 //fun User.Companion.Update(db: DB<SQLiteDatabase>) {
 //  val name = User.TableNameIn(db)
@@ -37,7 +37,7 @@ class User {
 //}
 
 
-//fun User.Companion.Initializer(): Collection<User> {
-//  return emptyList()
-//}
+fun User.Companion.Initializer(): Collection<User> {
+  return emptyList()
+}
 

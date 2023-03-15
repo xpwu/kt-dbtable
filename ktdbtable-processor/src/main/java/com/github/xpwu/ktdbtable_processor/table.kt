@@ -99,8 +99,8 @@ fun TableInfo.toContentValuesFun(): String {
   val builder = StringBuilder()
   for (c in this.Columns) {
     builder.append("""
-      ${tableClass}.Id -> cv.put(column.toString(), this.Id)
-    """.trimIndent())
+      ${tableClass}.${c.FieldName} -> cv.put(column.toString(), this.${c.FieldName})
+    """.trimIndent()).append("\n")
   }
 
   return """
@@ -147,8 +147,8 @@ fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
     errLog("${this.FieldName} is PRIMARY KEY, but it is not NOT NULL")
     return ""
   }
-
-  return "${this.ColumnAnno.name} $primaryKey $notNull DEFAULT ${this.ColumnAnno.defaultValue}"
+  val default = if (this.ColumnAnno.defaultValue.isNotEmpty()) "DEFAULT ${this.ColumnAnno.defaultValue}" else ""
+  return "${this.ColumnAnno.name} $primaryKey $notNull $default"
 }
 
 // "ALTER TABLE table_name ADD COLUMN ..."
@@ -247,7 +247,7 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
   val mulPrimaryKey = ArrayList<Pair<TablePrimaryConstraint, Int>>()
   var lastPrimaryKey = PrimaryKey.FALSE
   val builder = StringBuilder()
-  builder.append("CREATE TABLE IF NOT EXISTS ${this.Name}(")
+  builder.append("\"CREATE TABLE IF NOT EXISTS ${this.Name}(")
   if (this.Columns.size == 0) {
     return ""
   }
@@ -300,7 +300,7 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
   }
 
   // --> table_name(
-  builder.append(")")
+  builder.append(")\"")
 
   return builder.toString()
 }
@@ -314,7 +314,7 @@ fun Map<String, String>.toLiteral(): String {
   )
 
   for ((key, value) in this) {
-    builder.append("  $key to $value\n")
+    builder.append("  \"$key\" to \"$value\",\n")
   }
 
   builder.append(
