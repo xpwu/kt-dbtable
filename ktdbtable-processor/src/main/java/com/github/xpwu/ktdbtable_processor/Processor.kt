@@ -156,19 +156,14 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
     if (field.simpleName.toString() == "Companion") {
       continue
     }
-    this.logger.log(e, field.simpleName.toString())
 
-    val columnA = field.getAnnotation(Column::class.java) ?: continue
+    val columnA = field.getAnnotation(Column::class.java)
     val ty = entity2column[field.asType().toString()]
-
-    this.logger.log(e, ty.toString())
 
     if (ty == null) {
       this.logger.error(e, printTypeError(e.asType().toString()))
       return false
     }
-
-    this.logger.log(e, "column")
 
     val indexA = field.getAnnotationsByType(Index::class.java)
     tableInfo.Columns.add(
@@ -240,7 +235,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
 
   val columns = StringBuilder()
   for (c in tableInfo.Columns) {
-    columns.append(c.outField(tableClass)).append("\n")
+    columns.append(c.outField(tableClass)).append("\n\n")
   }
 
   val fileContent = """
@@ -263,7 +258,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
       return name
     }
     
-    $columns
+    ${columns.toString().align("    ")}
     
     ${tableInfo.allColumnsFun().align("    ")}
     

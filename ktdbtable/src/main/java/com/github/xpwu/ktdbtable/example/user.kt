@@ -14,9 +14,10 @@ class User {
   companion object
 
   @Column("id")
-  @Index
   var Id: String? = null
-  @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
+  @Index
+  @Index
+  @Column("name")
   var Name: String = "xp"
 }
 
@@ -30,10 +31,10 @@ class User {
 //  )
 //}
 
-fun User.Companion.Update(db: DB<SQLiteDatabase>) {
-  val name = User.TableNameIn(db)
-  db.UnderlyingDB.execSQL("")
-}
+//fun User.Companion.Update(db: DB<SQLiteDatabase>) {
+//  val name = User.TableNameIn(db)
+//  db.UnderlyingDB.execSQL("")
+//}
 
 
 //fun User.Companion.Initializer(): Collection<User> {

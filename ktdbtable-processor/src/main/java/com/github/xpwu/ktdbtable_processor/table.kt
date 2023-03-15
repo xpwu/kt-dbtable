@@ -129,7 +129,7 @@ fun primaryKey(key: PrimaryKey): String {
     return ""
   }
 
-  return key.toString()
+  return key.result
 }
 
 fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
@@ -291,13 +291,13 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
   mulPrimaryKey.sortWith { _1, _2 -> _1.second - _2.second }
   if (mulPrimaryKey.size != 0) {
     builder.append(", PRIMARY KEY(")
+    builder.append(mulPrimaryKey[0].first)
+    for (i in 1 until mulPrimaryKey.size) {
+      builder.append(", ")
+      builder.append(mulPrimaryKey[i].first)
+    }
+    builder.append(")")
   }
-  builder.append(mulPrimaryKey[0].first)
-  for (i in 1 until mulPrimaryKey.size) {
-    builder.append(", ")
-    builder.append(mulPrimaryKey[i].first)
-  }
-  builder.append(")")
 
   // --> table_name(
   builder.append(")")

@@ -51,7 +51,7 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  * @param sequence PRIMARY KEY 约束的顺序，只要相对有大小比较就行，并不严格要求数字是连续的
  *
  */
-@Target(AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FIELD)
 @Retention(AnnotationRetention.BINARY)
 annotation class Column(
   // 为了防止修改属性名，而造成列名非预期的自动修改，name在注解中必须明确赋值
@@ -83,7 +83,7 @@ enum class PrimaryKey(val result:String) {
  * @param sequence 联合索引的顺序，只要相对有大小比较就行，并不严格要求数字是连续的
  *
  */
-@Target(AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FIELD)
 @Retention(AnnotationRetention.BINARY)
 @Repeatable
 annotation class Index(val unique:Boolean = false,
