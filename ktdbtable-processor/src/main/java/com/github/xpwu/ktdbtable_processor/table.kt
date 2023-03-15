@@ -162,7 +162,7 @@ fun ColumnInfo.alter(table: String, errLog: (String) -> Unit): AlterSQL {
 fun ColumnInfo.index(table: String): Map<String, Triple<String, String, Int>> {
   val ret = emptyMap<String, Triple<String, String, Int>>().toMutableMap()
   for (indexA in this.IndexAnnotations) {
-    val name = indexA.name.ifEmpty { table + "_" + this.ColumnAnno.name }
+    val name = table + "_" + indexA.name.ifEmpty { this.ColumnAnno.name }
     val unique = if (indexA.unique) "UNIQUE" else ""
     val desc = if (indexA.desc) "DESC" else ""
     val column = "${this.ColumnAnno.name} $desc"
@@ -311,7 +311,7 @@ fun Map<String, String>.toLiteral(): String {
     """
       mapOf(
     """.trimIndent()
-  )
+  ).append("\n")
 
   for ((key, value) in this) {
     builder.append("  \"$key\" to \"$value\",\n")
@@ -329,11 +329,9 @@ fun Map<String, String>.toLiteral(): String {
 fun TableInfo.allIndexFun(logger: Logger): String {
   val tableClass = this.Type.simpleName.toString()
   return """
-    typealias IndexName = String
-    // "CREATE INDEX IF NOT EXISTS ..."
-    typealias IndexSQL = String
-    
-    private fun ${tableClass}.Companion.allIndex(): Map<IndexName, IndexSQL> {
+    // IndexName => IndexSQL
+    // IndexSQL: "CREATE INDEX IF NOT EXISTS ..."
+    private fun ${tableClass}.Companion.allIndex(): Map<String, String> {
       return ${this.index { str -> logger.error(this.Type, "${this.Name}: $str") }.toLiteral().align("      ")}
     }
   """.trimIndent()

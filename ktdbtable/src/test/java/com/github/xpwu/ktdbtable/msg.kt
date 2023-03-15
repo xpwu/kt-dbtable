@@ -28,8 +28,3 @@ fun Msg.Companion.Update(db: DB<SQLiteDatabase>) {
   val name = Msg.TableNameIn(db)
   db.UnderlyingDB.update(name, Msg().ToContentValues(), "", null)
 }
-
-
-//fun Msg.Companion.Initializer(): Collection<User> {
-//  return emptyList()
-//}
