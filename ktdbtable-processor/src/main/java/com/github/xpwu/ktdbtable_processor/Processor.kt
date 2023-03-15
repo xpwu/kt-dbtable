@@ -78,13 +78,19 @@ class Processor : AbstractProcessor() {
       times[info.Name] = (times[info.Name]?:0) + 1
     }
 
+    val imports = emptySet<String>().toMutableSet()
     val importBuilder = StringBuilder()
     val builder = StringBuilder()
     for (info in tables) {
-      importBuilder.append("""
-        import ${this.processingEnv!!.elementUtils.getPackageOf(info.Type)}.*
-      """.trimIndent())
-      importBuilder.append("\n")
+      val im = this.processingEnv!!.elementUtils.getPackageOf(info.Type).toString() + ".*"
+      if (!imports.contains(im)) {
+        imports.add(im)
+
+        importBuilder.append("""
+          import $im
+        """.trimIndent())
+        importBuilder.append("\n")
+      }
 
       if (times[info.Name] == 1) {
         builder.append("""
