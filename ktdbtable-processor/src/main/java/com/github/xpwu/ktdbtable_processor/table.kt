@@ -340,7 +340,6 @@ fun TableInfo.allIndexFun(logger: Logger): String {
 }
 
 fun TableInfo.out(logger: Logger): String {
-//  val fullName = this.Type.qualifiedName.toString()
   val tableClass = this.Type.simpleName.toString()
 
   val column = this.alterColumns(logger).toLiteral()

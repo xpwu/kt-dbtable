@@ -7,7 +7,6 @@ import org.jetbrains.annotations.NotNull
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
-//import com.google.auto.service.AutoService
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.*
@@ -24,8 +23,6 @@ private fun isNotNull(element: Element): Boolean {
   return element.getAnnotation(metaDataClass) != null
 }
 
-
-//@AutoService(Processor::class)
 class Processor : AbstractProcessor() {
   internal var logger: Logger = Logger(object : Messager {
     override fun printMessage(p0: Diagnostic.Kind?, p1: CharSequence?) {}
@@ -37,6 +34,9 @@ class Processor : AbstractProcessor() {
   internal var outDirectory = ""
 
   internal var processingEnv: ProcessingEnvironment? = null
+
+  internal var extensionMigs = emptySet<String>().toMutableSet()
+  internal var extensionInits = emptySet<String>().toMutableSet()
 
   override fun init(processingEnv: ProcessingEnvironment) {
     super.init(processingEnv)
@@ -59,6 +59,8 @@ class Processor : AbstractProcessor() {
     if (annotations.isEmpty()) {
       return true
     }
+
+    this.ktExtension(roundEnv)
 
     val tables: MutableSet<TableInfo> = emptySet<TableInfo>().toMutableSet()
 
@@ -117,6 +119,73 @@ class Processor : AbstractProcessor() {
   }
 }
 
+fun Processor.ktExtension(roundEnv: RoundEnvironment) {
+  /**
+   * 扩展会被kapt转变为：
+   *
+   *
+
+  User.Companion.Migrators()  ===>
+
+  @kotlin.Metadata(mv = {1, 8, 0}, k = 2, )
+  public final class UserKt {
+
+  @org.jetbrains.annotations.NotNull()
+  public static final java.util.Map<com.github.xpwu.ktdbtable.Version, kotlin.jvm.functions.Function1<com.github.xpwu.ktdbtable.DB<?>, kotlin.Unit>> Migrators(@org.jetbrains.annotations.NotNull()
+  com.github.xpwu.ktdbtable.example.User.Companion $this$Migrators) {
+  return null;
+  }
+
+  @org.jetbrains.annotations.NotNull()
+  public static final java.util.Collection<com.github.xpwu.ktdbtable.example.User> Initializer(@org.jetbrains.annotations.NotNull()
+  com.github.xpwu.ktdbtable.example.User.Companion $this$Initializer) {
+  return null;
+  }
+  }
+   *
+   *
+   * 如果原文件使用了  @file:JvmName("XXX")  则类名会变为 XXX 而不是原始的类名后面跟上Kt的形式
+   *
+   */
+
+  // todo 所有的Kotlin类都会有这个注解，可能返回会很多
+  for (e in roundEnv.getElementsAnnotatedWith(Metadata::class.java)) {
+    val ann= e.getAnnotation(Metadata::class.java)
+    // must be file
+    if (ann.kind != 2) {
+      continue
+    }
+    if (e.kind != ElementKind.CLASS) {
+      continue
+    }
+    val clazz = e as TypeElement
+    if (!clazz.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.FINAL))) {
+      continue
+    }
+
+    for (ee in clazz.enclosedElements) {
+      if (ee.kind != ElementKind.METHOD) {
+        continue
+      }
+
+      val exe = ee as ExecutableElement
+
+      if (exe.simpleName.toString() == "Migrators"
+        && exe.parameters.size == 1
+        && exe.parameters[0].asType().toString().takeLast(".Companion".length) == ".Companion") {
+        this.extensionMigs.add(exe.parameters[0].asType().toString().substringBefore(".Companion"))
+      }
+
+      if (exe.simpleName.toString() == "Initializer"
+        && exe.parameters.size == 1
+        && exe.parameters[0].asType().toString().takeLast(".Companion".length) == ".Companion") {
+        this.extensionInits.add(exe.parameters[0].asType().toString().substringBefore(".Companion"))
+      }
+
+    }
+  }
+}
+
 typealias ok = Boolean
 
 fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): ok {
@@ -124,7 +193,6 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
   val tableInfo = TableInfo(ta.name, ta.version, table)
   tables.add(tableInfo)
 
-//  val enclosedElements =
   var hasCompanion = false
   for (e in table.enclosedElements) {
     if (e.kind == ElementKind.CLASS) {
@@ -132,18 +200,17 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
        * companion object  converted by kapt to:
       public static final class Companion {
 
-      private Companion() {
-      super();
-      }
+        private Companion() {
+          super();
+        }
       }
        */
-      val clazz = e as TypeElement
       if (e.simpleName.toString() == "Companion"
         && e.modifiers.containsAll(arrayListOf(Modifier.STATIC, Modifier.FINAL, Modifier.PUBLIC))
       ) {
         hasCompanion = true
 
-        tableInfo.MigInit = this.processMigInit(table.simpleName.toString(), clazz)
+        tableInfo.MigInit = this.processMigInit(table)
       }
       continue
     }
@@ -153,6 +220,8 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
     }
 
     val field = e as VariableElement
+    // @org.jetbrains.annotations.NotNull()
+    // public static final xxx.xxx.Companion Companion = null;
     if (field.simpleName.toString() == "Companion") {
       continue
     }
@@ -229,6 +298,35 @@ fun Processor.processMigInit(tableClass: String, companion: TypeElement): Pair<S
   return Pair("", "")
 }
 
+fun Processor.processMigInit(table: TypeElement):
+  Pair<String, String> {
+
+  val mig = """
+    fun ${table.simpleName}.Companion.Migrators(): Map<Version, Migration> {
+      return emptyMap()
+    }
+  """.trimIndent()
+  val init = """
+    fun ${table.simpleName}.Companion.Initializer(): Collection<${table.simpleName}> {
+      return emptyList()
+    }
+  """.trimIndent()
+
+  val hasMig = this.extensionMigs.contains(table.qualifiedName.toString())
+  val hasInit = this.extensionInits.contains(table.qualifiedName.toString())
+
+  if (!hasMig && !hasInit) {
+    return Pair(mig, init)
+  }
+  if (!hasMig) {
+    return Pair(mig, "")
+  }
+  if (!hasInit) {
+    return Pair("", init)
+  }
+  return Pair("", "")
+}
+
 fun Processor.outATable(tableInfo: TableInfo) {
   val tableClass = tableInfo.Type.simpleName.toString()
   val packageName = this.processingEnv!!.elementUtils.getPackageOf(tableInfo.Type).toString()
@@ -239,6 +337,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
   }
 
   val fileContent = """
+    @file:JvmName("${tableClass}Table")
     package $packageName
     
     // This file is generated by ktdbtable_processor. DO NOT edit it!

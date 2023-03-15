@@ -41,14 +41,6 @@ data class TableInfo (
   val Indexes: Map<IndexName, IndexSQL> = emptyMap(),
 )
 
-//interface TableContainer {
-//  val AllTables: Map<String, TableInfo>
-//}
-
-//object TableContainer{
-//  val AllTables: Map<String, TableInfo>
-//}
-
 /**
  *
  * 记录所有能从 name(table 的默认name) => TableInfo 的映射对 以及 kclass.qualifiedName => TableInfo 的映射对
