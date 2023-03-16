@@ -23,15 +23,17 @@ enum class Type {
 
 fun printTypeError(errorType: String): String {
   return """type <${errorType}> error! Only support: 
-    Byte, Short, Int, Long (Uxxx)  => INTEGER
+    Byte, Short, Int, Long   => INTEGER
     Boolean => INTEGER ( true -> 1 ; false -> 0 )
     String => TEXT
     Float, Double => REAL
-    ByteArray, Array<Byte> (UByte) => BLOB
+    ByteArray  => BLOB
     """
 }
 
 /**
+ *
+ *     UByte, UShort, UInt, ULong   => INTEGER
  *
  * Byte, Short, Int, Long (Uxxx)  => INTEGER
  * Boolean => INTEGER ( true -> 1 ; false -> 0 )
@@ -44,21 +46,22 @@ fun printTypeError(errorType: String): String {
 @OptIn(ExperimentalUnsignedTypes::class)
 val entity2column = mapOf<String, Type>(
   Int::class.java.canonicalName to Type.INTEGER,
-  UInt::class.java.canonicalName to Type.INTEGER,
+//  UInt::class.java.canonicalName to Type.INTEGER,
   Short::class.java.canonicalName to Type.INTEGER,
-  UShort::class.java.canonicalName to Type.INTEGER,
+//  UShort::class.java.canonicalName to Type.INTEGER,
   Byte::class.java.canonicalName to Type.INTEGER,
-  UByte::class.java.canonicalName to Type.INTEGER,
+//  UByte::class.java.canonicalName to Type.INTEGER,
   Long::class.java.canonicalName to Type.INTEGER,
-  ULong::class.java.canonicalName to Type.INTEGER,
+//  ULong::class.java.canonicalName to Type.INTEGER,
   Boolean::class.java.canonicalName to Type.INTEGER,
   Float::class.java.canonicalName to Type.REAL,
   Double::class.java.canonicalName to Type.REAL,
   String::class.java.canonicalName to Type.TEXT,
   ByteArray::class.java.canonicalName to Type.BLOB,
-  UByteArray::class.java.canonicalName to Type.BLOB,
-  Array<Byte>::class.java.canonicalName to Type.BLOB,
-  Array<UByte>::class.java.canonicalName to Type.BLOB,
+//  UByteArray::class.java.canonicalName to Type.BLOB,
+  // content values 暂不支持，转换留给调用方
+//  Array<Byte>::class.java.canonicalName to Type.BLOB,
+//  Array<UByte>::class.java.canonicalName to Type.BLOB,
 )
 
 class ColumnInfo(
@@ -140,8 +143,10 @@ fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
   }
 
   val primaryKey = primaryKey(this.ColumnAnno.primaryKey)
+  // 如果是主键，但是注解的notNull 不为true，强制设定注解的not null 为true
+  val annoNotNull = this.ColumnAnno.notNull || primaryKey.isNotEmpty()
 
-  val notNull = if (this.NotNull && this.ColumnAnno.notNull) "NOT NULL" else ""
+  val notNull = if (this.NotNull && annoNotNull) "NOT NULL" else ""
 
   if (primaryKey.isNotEmpty() && notNull.isEmpty()) {
     errLog("${this.FieldName} is PRIMARY KEY, but it is not NOT NULL")
@@ -245,12 +250,14 @@ typealias TablePrimaryConstraint = String
 // CREATE TABLE IF NOT EXISTS
 fun TableInfo.sqlForCreating(logger: Logger): String {
   val mulPrimaryKey = ArrayList<Pair<TablePrimaryConstraint, Int>>()
-  var lastPrimaryKey = PrimaryKey.FALSE
+
   val builder = StringBuilder()
   builder.append("\"CREATE TABLE IF NOT EXISTS ${this.Name}(")
   if (this.Columns.size == 0) {
     return ""
   }
+
+  var lastPrimaryKey = this.Columns[0].ColumnAnno.primaryKey
 
   builder.append(this.Columns[0].constraint { str ->
     logger.error(
@@ -258,6 +265,16 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
       "${this.Name}: $str"
     )
   })
+
+  if (lastPrimaryKey == PrimaryKey.MULTI_DESC || lastPrimaryKey == PrimaryKey.MULTI) {
+    mulPrimaryKey.add(
+      Pair(
+        "${this.Columns[0].ColumnAnno.name} ${lastPrimaryKey.result}",
+        this.Columns[0].ColumnAnno.sequence
+      )
+    )
+  }
+
   for (i in 1 until this.Columns.size) {
     builder.append(", ")
     builder.append(this.Columns[i].constraint { str ->
@@ -266,25 +283,26 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
         "${this.Name}: $str"
       )
     })
-    if (this.Columns[i].ColumnAnno.primaryKey != PrimaryKey.FALSE) {
-      if (lastPrimaryKey != PrimaryKey.FALSE
-        && lastPrimaryKey != PrimaryKey.MULTI_DESC
-        && lastPrimaryKey != PrimaryKey.MULTI
-      ) {
+
+    val nowPrimaryKey = this.Columns[i].ColumnAnno.primaryKey
+    if (nowPrimaryKey != PrimaryKey.FALSE && lastPrimaryKey != PrimaryKey.FALSE) {
+      // 必须 都是 multi_
+      if (!((lastPrimaryKey == PrimaryKey.MULTI_DESC || lastPrimaryKey == PrimaryKey.MULTI)
+        && (nowPrimaryKey == PrimaryKey.MULTI_DESC || nowPrimaryKey == PrimaryKey.MULTI))) {
 
         logger.error(this.Type, "${this.Name}: PrimaryKey.ONLY_ONE_xx too much")
         return ""
       }
-      lastPrimaryKey = this.Columns[i].ColumnAnno.primaryKey
+    }
+    lastPrimaryKey = nowPrimaryKey
 
-      if (lastPrimaryKey == PrimaryKey.MULTI_DESC || lastPrimaryKey == PrimaryKey.MULTI) {
-        mulPrimaryKey.add(
-          Pair(
-            "${this.Columns[i].ColumnAnno.name} $lastPrimaryKey",
-            this.Columns[i].ColumnAnno.sequence
-          )
+    if (nowPrimaryKey == PrimaryKey.MULTI_DESC || nowPrimaryKey == PrimaryKey.MULTI) {
+      mulPrimaryKey.add(
+        Pair(
+          "${this.Columns[i].ColumnAnno.name} ${nowPrimaryKey.result}",
+          this.Columns[i].ColumnAnno.sequence
         )
-      }
+      )
     }
   }
 

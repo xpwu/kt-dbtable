@@ -19,8 +19,7 @@ private fun isJavaFile(element: TypeElement): Boolean {
 }
 
 private fun isNotNull(element: Element): Boolean {
-  val metaDataClass = NotNull::class.java.asSubclass(Annotation::class.java)
-  return element.getAnnotation(metaDataClass) != null
+  return element.getAnnotation(NotNull::class.java) != null
 }
 
 class Processor : AbstractProcessor() {
@@ -199,6 +198,7 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
   val tableInfo = TableInfo(ta.name, ta.version, table)
   tables.add(tableInfo)
 
+  val names = emptySet<String>().toMutableSet()
   var hasCompanion = false
   for (e in table.enclosedElements) {
     if (e.kind == ElementKind.CLASS) {
@@ -232,13 +232,18 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
       continue
     }
 
-    val columnA = field.getAnnotation(Column::class.java)
+    val columnA = field.getAnnotation(Column::class.java) ?: continue
     val ty = entity2column[field.asType().toString()]
 
     if (ty == null) {
       this.logger.error(e, printTypeError(e.asType().toString()))
       return false
     }
+    if (names.contains(columnA.name)) {
+      this.logger.error(e, "column name(${columnA.name}) is duplicate")
+      return false
+    }
+    names.add(columnA.name)
 
     val indexA = field.getAnnotationsByType(Index::class.java)
     tableInfo.Columns.add(

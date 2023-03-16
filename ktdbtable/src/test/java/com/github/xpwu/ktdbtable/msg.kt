@@ -28,3 +28,39 @@ fun Msg.Companion.Update(db: DB<SQLiteDatabase>) {
   val name = Msg.TableNameIn(db)
   db.UnderlyingDB.update(name, Msg().ToContentValues(), "", null)
 }
+
+@Table("group")
+class Group {
+  companion object
+
+  @Column("id", primaryKey = PrimaryKey.ONLY_ONE)
+  var Id: String = ""
+  @Column("name")
+  var Name: String = "xp"
+  var inner: Int = 0
+
+  @Column("mems")
+  val Members: ByteArray = byteArrayOf()
+
+  @Column("mems1")
+  val Members1: Int = 10
+
+}
+
+@Table("group")
+class GroupInfo {
+  companion object
+
+  @Column("id", primaryKey = PrimaryKey.MULTI_DESC)
+  var Id: String = ""
+  @Column("name")
+  var Name: String = "xp"
+  var inner: Int = 0
+
+  @Column("mems")
+  val Members: ByteArray = byteArrayOf()
+
+  @Column("mems1", primaryKey = PrimaryKey.MULTI)
+  val Members1: Int = 10
+
+}
