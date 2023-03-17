@@ -16,5 +16,5 @@ pluginManagement {
 rootProject.name = "ktdbtable"
 include ':app'
 include ':ktdbtable'
-include ':ktdbtable-processor'
+include ':processor'
 include ':annotation'
