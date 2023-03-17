@@ -33,6 +33,7 @@ allprojects {
   }
 
   group = 'com.github.xpwu'
+  version = '0.1.0'
 }
 
 subprojects {
