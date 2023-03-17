@@ -41,7 +41,6 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-reflect:1.8.10"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.20-RC'
     implementation project(path: ':annotation')
-    kapt project(path: ':ktdbtable-processor')
     kaptTest project(path: ':ktdbtable-processor')
     testImplementation 'junit:junit:4.13.2'
     kaptAndroidTest project(path: ':ktdbtable-processor')
