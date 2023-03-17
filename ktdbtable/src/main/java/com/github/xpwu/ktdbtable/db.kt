@@ -224,19 +224,21 @@ fun DB<*>.OldVersions(tables: ArrayList<String>): IntArray {
   this.CreateXMaster()
   val placeholder = MakePlaceHolder(tables.size)
   val cursor: Cursor = this.dber.Query(
-    "SELECT $XMasterTblVersionColumn FROM $XMasterTable WHERE $XMasterTblNameColumn in ($placeholder)",
+    "SELECT $XMasterTblNameColumn, $XMasterTblVersionColumn FROM $XMasterTable WHERE $XMasterTblNameColumn in ($placeholder)",
     tables.toArray(emptyArray())
   )
 
   // default = 0
-  val ret = IntArray(tables.size)
-  var i = 0
+  val curRet = emptyMap<String, Int>().toMutableMap()
   while (cursor.moveToNext() && !cursor.isNull(0)) {
-    ret[i] = cursor.getInt(0)
-    ++i
+    curRet[cursor.getString(0)] = cursor.getInt(1)
   }
-
   cursor.close()
+
+  val ret = IntArray(tables.size)
+  for ((i, table) in tables.withIndex()) {
+    ret[i] = curRet[table]?:0
+  }
   return ret
 }
 
@@ -251,7 +253,7 @@ fun DB<*>.SetVersion(table: String, version: Int) {
 fun DB<*>.TableColumnNames(table: String): ArrayList<String> {
   val columnNames = ArrayList<String>()
 
-  val cursor: Cursor = this.dber.Query("PRAGMA table_info($table)", null)
+  val cursor: Cursor = this.dber.Query("PRAGMA table_info(`$table`)", null)
 
   while (cursor.moveToNext()) {
     columnNames.add(cursor.getString(1))

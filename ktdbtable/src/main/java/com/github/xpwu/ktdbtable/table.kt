@@ -37,8 +37,8 @@ typealias IndexSQL = String
 data class TableInfo (
   val Version: Int = 0,
   val Migrators: Map<Version, Migration> = emptyMap(),
-  val Columns: Map<ColumnName, AlterSQL> = emptyMap(),
   val Indexes: Map<IndexName, IndexSQL> = emptyMap(),
+  val Columns: Map<ColumnName, AlterSQL> = emptyMap(),
 )
 
 /**

@@ -153,7 +153,7 @@ fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
     return ""
   }
   val default = if (this.ColumnAnno.defaultValue.isNotEmpty()) "DEFAULT ${this.ColumnAnno.defaultValue}" else ""
-  return "${this.ColumnAnno.name} $primaryKey $notNull $default"
+  return "`${this.ColumnAnno.name}` ${this.Typ} $primaryKey $notNull $default"
 }
 
 // "ALTER TABLE table_name ADD COLUMN ..."
@@ -170,7 +170,7 @@ fun ColumnInfo.index(table: String): Map<String, Triple<String, String, Int>> {
     val name = table + "_" + indexA.name.ifEmpty { this.ColumnAnno.name }
     val unique = if (indexA.unique) "UNIQUE" else ""
     val desc = if (indexA.desc) "DESC" else ""
-    val column = "${this.ColumnAnno.name} $desc"
+    val column = "`${this.ColumnAnno.name}` $desc"
     ret[name] = Triple(unique, column, indexA.sequence)
   }
 
@@ -228,7 +228,7 @@ fun TableInfo.index(errLog: (String) -> Unit): Map<IndexName, IndexSQL> {
   for ((indexName, value) in all) {
     if (value.isEmpty()) continue
     val con = value.toString { str -> errLog("$indexName: $str") }
-    ret[indexName] = "CREATE ${value[0].first} INDEX IF NOT EXISTS $indexName ON ${this.Name} $con"
+    ret[indexName] = "CREATE ${value[0].first} INDEX IF NOT EXISTS `$indexName` ON `${this.Name}` $con"
   }
 
   return ret
@@ -252,7 +252,7 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
   val mulPrimaryKey = ArrayList<Pair<TablePrimaryConstraint, Int>>()
 
   val builder = StringBuilder()
-  builder.append("\"CREATE TABLE IF NOT EXISTS ${this.Name}(")
+  builder.append("\"CREATE TABLE IF NOT EXISTS `${this.Name}`(")
   if (this.Columns.size == 0) {
     return ""
   }
@@ -309,10 +309,10 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
   mulPrimaryKey.sortWith { _1, _2 -> _1.second - _2.second }
   if (mulPrimaryKey.size != 0) {
     builder.append(", PRIMARY KEY(")
-    builder.append(mulPrimaryKey[0].first)
+    builder.append("`${mulPrimaryKey[0].first}`")
     for (i in 1 until mulPrimaryKey.size) {
       builder.append(", ")
-      builder.append(mulPrimaryKey[i].first)
+      builder.append("`${mulPrimaryKey[i].first}`")
     }
     builder.append(")")
   }

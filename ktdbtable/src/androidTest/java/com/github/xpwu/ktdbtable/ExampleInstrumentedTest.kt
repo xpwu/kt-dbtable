@@ -52,9 +52,22 @@ class User {
 
   @Column("time")
   @Index(unique = true)
-  val Time: Int = 232323
+  var Time: Int = 232323
+
+  @Column("add")
+  var Add: ByteArray = ByteArray(0)
+}
+
+fun NewUser(id: String, name: String, time: Int): User {
+  val u = User()
+  u.Id = id
+  u.Name = name
+  u.Time = time
+
+  return u
 }
 
 fun User.Companion.Initializer(): Collection<User> {
-  return listOf(User())
+
+  return listOf(User(), NewUser("0x111", "wu", 478))
 }
