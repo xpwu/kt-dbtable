@@ -36,6 +36,8 @@ allprojects {
   version = '0.1.0'
 }
 
+apply plugin: 'maven-publish'
+
 subprojects {
 
   if (name == 'processor' || name == 'annotation') {
