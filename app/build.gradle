@@ -3,6 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+apply plugin: 'kotlin-kapt'
+
 android {
     namespace 'com.github.xpwu.ktdbtable'
     compileSdk 33
@@ -37,6 +39,8 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
+//    implementation 'com.github.xpwu:kt-dbtable:0133452a9f'
+//    kapt 'com.github.xpwu.kt-dbtable:ktdbtable-processor:0133452a9f'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
