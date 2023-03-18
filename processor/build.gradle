@@ -35,16 +35,11 @@ compileTestKotlin {
 publishing {
   publications {
     maven(MavenPublication) {
-      groupId project.group
+      groupId "com.github.xpwu"
       artifactId project.name
       version project.version
 //      from components.java
       from components.kotlin
-    }
-  }
-  repositories {
-    maven {
-      url "https://jitpack.io"
     }
   }
 }
