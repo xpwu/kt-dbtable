@@ -20,10 +20,9 @@ buildscript {
 plugins {
   id 'com.android.application' version '7.4.2' apply false
   id 'com.android.library' version '7.4.2' apply false
-  id 'org.jetbrains.kotlin.android' version '1.8.20-RC' apply false
-  id 'org.jetbrains.kotlin.jvm' version '1.8.0' apply false
+  id 'org.jetbrains.kotlin.android' version "$kotlin_version" apply false
+  id 'org.jetbrains.kotlin.jvm' version "$kotlin_version" apply false
 }
-
 
 allprojects {
   repositories {
@@ -31,37 +30,34 @@ allprojects {
     mavenCentral()
     maven { url 'https://jitpack.io' }
   }
-
-  group = 'com.github.xpwu'
-  version = '0.1.0'
 }
 
-apply plugin: 'maven-publish'
+//apply plugin: 'maven-publish'
 
-subprojects {
-
-  if (name == 'processor' || name == 'annotation') {
-    apply plugin: 'java'
-    apply plugin: 'maven-publish'
-
-    sourceCompatibility = 1.8 // java 8
-    targetCompatibility = 1.8
-
-    java {
-      withSourcesJar()
-      withJavadocJar()
-    }
-
-    publishing {
-      publications {
-        maven(MavenPublication) {
-          groupId project.group
-          artifactId project.name
-          version project.version
-          from components.java
-        }
-      }
-    }
-  }
-}
+//subprojects {
+//
+//  if (name == 'processor' || name == 'annotation') {
+//    apply plugin: 'java'
+//    apply plugin: 'maven-publish'
+//
+//    sourceCompatibility = 1.8 // java 8
+//    targetCompatibility = 1.8
+//
+//    java {
+//      withSourcesJar()
+//      withJavadocJar()
+//    }
+//
+//    publishing {
+//      publications {
+//        maven(MavenPublication) {
+//          groupId project.group
+//          artifactId project.name
+//          version project.version
+//          from components.java
+//        }
+//      }
+//    }
+//  }
+//}
 
