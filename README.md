@@ -30,8 +30,9 @@ dependencies {
 1、添加列：直接在代码中添加属性即可  
 2、删除列：表的代码里面删除属性即可   
 3、添加索引：直接用@Index指定新的索引即可   
-4、改列名：修改属性名而不修改真实字段名即可   
-5、其他复杂升级：在表的类代码中实现 fun xxx.Companion.Migrators(): Map<Version, Migration>
+4、改列名：修改属性名而不修改真实字段名即可  
+5、创建新表：定义表的类，在使用此表的地方会自动创建，表名必须通过TableNameIn(db)获取   
+6、其他复杂升级：在表的类代码中实现 fun xxx.Companion.Migrators(): Map<Version, Migration>
 同时在@Table中指定新的版本号  
 
 ## 3、库与表的绑定  
