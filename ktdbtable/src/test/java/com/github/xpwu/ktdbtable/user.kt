@@ -32,6 +32,30 @@ class NameInfo {
   @Index(true, "test_index_name")
   @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
   var Name: String = "xp"
+
+  @Column("bytea")
+  var ByteA: ByteArray  = byteArrayOf()
+
+  @Column("IntF")
+  var IntF: Int  = 0
+
+  @Column("ByteF")
+  var ByteF: Byte  = 0
+
+  @Column("ShortF")
+  var ShortF: Short  = 0
+
+  @Column("LongF")
+  var LongF: Long  = 0
+
+  @Column("DoubleF")
+  var DoubleF: Double  = 0.0
+
+  @Column("FloatF")
+  var FloatF: Float  = 0.0F
+
+  @Column("BoolF")
+  var BoolF: Boolean  = true
 }
 
 fun NameInfo.Companion.Initializer(): Collection<NameInfo> {

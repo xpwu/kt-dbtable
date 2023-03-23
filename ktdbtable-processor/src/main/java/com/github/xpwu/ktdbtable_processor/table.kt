@@ -4,6 +4,7 @@ import com.github.xpwu.ktdbtble.annotation.Column
 import com.github.xpwu.ktdbtble.annotation.Index
 import com.github.xpwu.ktdbtble.annotation.PrimaryKey
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.TypeMirror
 
 class TableInfo(
   val Name: String,
@@ -11,7 +12,8 @@ class TableInfo(
   val Type: TypeElement,
   val Columns: ArrayList<ColumnInfo> = ArrayList(),
   // default Migrators() and Initializer()
-  var MigInit: Pair<String, String> = Pair("", "")
+  var MigInit: Pair<String, String> = Pair("", ""),
+  var ValFieldName: String = ""
 )
 
 enum class Type {
@@ -33,17 +35,14 @@ fun printTypeError(errorType: String): String {
 
 /**
  *
- *     UByte, UShort, UInt, ULong   => INTEGER
- *
- * Byte, Short, Int, Long (Uxxx)  => INTEGER
+ * Byte, Short, Int, Long  => INTEGER
  * Boolean => INTEGER ( true -> 1 ; false -> 0 )
  * String => TEXT
  * Float, Double => REAL
- * ByteArray, Array<Byte> (UByte) => BLOB
+ * ByteArray => BLOB
  *
  */
 
-@OptIn(ExperimentalUnsignedTypes::class)
 val entity2column = mapOf<String, Type>(
   Int::class.java.canonicalName to Type.INTEGER,
 //  UInt::class.java.canonicalName to Type.INTEGER,
@@ -64,12 +63,25 @@ val entity2column = mapOf<String, Type>(
 //  Array<UByte>::class.java.canonicalName to Type.BLOB,
 )
 
+val getFun = mapOf<String, (String)->String >(
+  Int::class.java.canonicalName to {i -> "getInt($i)"},
+  Short::class.java.canonicalName to {i -> "getShort($i)"},
+  Byte::class.java.canonicalName to {i -> "getShort($i).toByte()"},
+  Long::class.java.canonicalName to {i -> "getLong($i)"},
+  Boolean::class.java.canonicalName to {i -> "getInt($i) != 0"},
+  Float::class.java.canonicalName to {i -> "getFloat($i)"},
+  Double::class.java.canonicalName to {i -> "getDouble($i)"},
+  String::class.java.canonicalName to {i -> "getString($i)"},
+  ByteArray::class.java.canonicalName to {i -> "getBlob($i)"},
+)
+
 class ColumnInfo(
   val Typ: Type,
   val FieldName: String,
   val ColumnAnno: Column,
   val NotNull: Boolean,
   val IndexAnnotations: Array<Index>,
+  val DataType: TypeMirror
 )
 
 fun ColumnInfo.outField(tableClass: String): String {
@@ -119,6 +131,68 @@ fun TableInfo.toContentValuesFun(): String {
       }
 
       return cv
+    }
+  """.trimIndent()
+}
+
+fun TableInfo.hasClass(): String {
+  val tableClass = this.Type.simpleName.toString()
+  val builder = StringBuilder()
+  for (c in this.Columns) {
+    builder.append("""
+      val ${c.FieldName}: Boolean,
+    """.trimIndent()).append("\n")
+  }
+
+  return """
+    data class ${tableClass}Has(
+      ${builder.toString().align("      ")} 
+    )
+  """.trimIndent()
+}
+
+fun TableInfo.cursorToFun(): String {
+  val tableClass = this.Type.simpleName.toString()
+
+  if (this.ValFieldName.isNotEmpty()) {
+    return """
+      // NOT implement 'fun Cursor.To${tableClass}(out: ${tableClass}): ${tableClass}Has'.
+      // Because its ${this.ValFieldName} is 'val' field
+    """.trimIndent()
+  }
+
+  val getBuilder = StringBuilder()
+  for (i in 0 until  this.Columns.size) {
+    val fieldName = this.Columns[i].FieldName
+    val funName = (getFun[this.Columns[i].DataType.toString()]?:{""})("i")
+    getBuilder.append("""
+      ${tableClass}.${fieldName}.toString() -> { out.${fieldName} = this.${funName}; has[${i}] = true }
+    """.trimIndent()).append("\n")
+  }
+
+  val hasBuilder = StringBuilder()
+  for (i in 0 until  this.Columns.size) {
+    hasBuilder.append("""
+      has[$i], 
+    """.trimIndent())
+  }
+
+  return """
+    fun Cursor.To${tableClass}(out: ${tableClass}): ${tableClass}Has {
+      val has = BooleanArray(${this.Columns.size})
+      for (i in 0 until this.count) {
+        if (this.isNull(i)) continue
+        when(this.getColumnName(i)) {
+          ${getBuilder.toString().align("          ")}
+          else -> {
+            throw IllegalArgumentException("Illegal column ${'$'}{this.getColumnName(i)} for User")
+          }
+        }
+      }
+
+      return ${tableClass}Has(
+        $hasBuilder
+      )
     }
   """.trimIndent()
 }
