@@ -4,6 +4,7 @@ import com.github.xpwu.ktdbtble.annotation.Column
 import com.github.xpwu.ktdbtble.annotation.Index
 import com.github.xpwu.ktdbtble.annotation.PrimaryKey
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 
 class TableInfo(
@@ -84,10 +85,22 @@ class ColumnInfo(
   val DataType: TypeMirror
 )
 
+val columnTypePre = mapOf<String, String>(
+  Boolean::class.java.canonicalName to "Boolean",
+  Long::class.java.canonicalName to "Long",
+  Int::class.java.canonicalName to "Int",
+  Short::class.java.canonicalName to "Short",
+  Byte::class.java.canonicalName to "Byte",
+  Float::class.java.canonicalName to "Float",
+  Double::class.java.canonicalName to "Double",
+  String::class.java.canonicalName to "String",
+  ByteArray::class.java.canonicalName to "ByteArray",
+)
+
 fun ColumnInfo.outField(tableClass: String): String {
   return """
     val ${tableClass}.Companion.${this.FieldName}
-      get() = Column("${this.ColumnAnno.name}")
+      get() = ${columnTypePre[this.DataType.toString()]}Column("${this.ColumnAnno.name}")
   """.trimIndent()
 }
 
@@ -100,7 +113,7 @@ fun TableInfo.allColumnsFun(): String {
   }
 
   return """
-    fun ${tableClass}.Companion.AllColumns(): List<Column> {
+    fun ${tableClass}.Companion.AllColumns(): List<ColumnInfo> {
       return listOf(
         ${filedBuilder.toString().align("        ")}
       )
@@ -119,7 +132,7 @@ fun TableInfo.toContentValuesFun(): String {
   }
 
   return """
-    fun ${tableClass}.ToContentValues(columns: List<Column> = ${tableClass}.AllColumns()): ContentValues {
+    fun ${tableClass}.ToContentValues(columns: List<ColumnInfo> = ${tableClass}.AllColumns()): ContentValues {
       val cv = ContentValues(columns.size)
       for (column in columns) {
         when(column) {

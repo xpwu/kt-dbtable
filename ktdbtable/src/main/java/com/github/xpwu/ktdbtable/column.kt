@@ -2,7 +2,7 @@ package com.github.xpwu.ktdbtable
 
 import com.github.xpwu.ktdbtable.where.*
 
-open class Column(val name: String) {
+open class ColumnInfo(val name: String) {
   override fun toString(): String {
     return name
   }
@@ -29,14 +29,15 @@ open class Column(val name: String) {
    */
 }
 
-val Column.IsNull : Where
+val ColumnInfo.IsNull : Where
   get() = Compare(this.name, Null.IS)
 
-val Column.IsNotNull : Where
+val ColumnInfo.IsNotNull : Where
   get() = Compare(this.name, Null.NOT)
 
+class ByteArrayColumn(name: String) : ColumnInfo(name)
 
-class LongColumn(name: String) : Column(name)
+class LongColumn(name: String) : ColumnInfo(name)
 
 // <
 infix fun LongColumn.lt(value: Long): Where {
@@ -78,7 +79,7 @@ infix fun LongColumn.btw(rang: Pair<Long, Long>): Where {
   return Between(this.name, rang.first, rang.second)
 }
 
-class IntColumn(name: String) : Column(name)
+class IntColumn(name: String) : ColumnInfo(name)
 
 // <
 infix fun IntColumn.lt(value: Int): Where {
@@ -120,7 +121,7 @@ infix fun IntColumn.btw(rang: Pair<Int, Int>): Where {
   return Between(this.name, rang.first, rang.second)
 }
 
-class ShortColumn(name: String) : Column(name)
+class ShortColumn(name: String) : ColumnInfo(name)
 
 // <
 infix fun ShortColumn.lt(value: Short): Where {
@@ -162,7 +163,7 @@ infix fun ShortColumn.btw(rang: Pair<Short, Short>): Where {
   return Between(this.name, rang.first, rang.second)
 }
 
-class ByteColumn(name: String) : Column(name)
+class ByteColumn(name: String) : ColumnInfo(name)
 
 // <
 infix fun ByteColumn.lt(value: Byte): Where {
@@ -204,7 +205,7 @@ infix fun ByteColumn.btw(rang: Pair<Byte, Byte>): Where {
   return Between(this.name, rang.first, rang.second)
 }
 
-class BooleanColumn(name: String) : Column(name)
+class BooleanColumn(name: String) : ColumnInfo(name)
 
 // ==
 infix fun BooleanColumn.eq(value: Boolean): Where {
@@ -221,7 +222,7 @@ infix fun BooleanColumn.eq(value: Boolean): Where {
 //  return Between(this.name, rang.first, rang.second)
 //}
 
-class FloatColumn(name: String) : Column(name)
+class FloatColumn(name: String) : ColumnInfo(name)
 
 // <
 infix fun FloatColumn.lt(value: Float): Where {
@@ -238,7 +239,7 @@ infix fun FloatColumn.btw(rang: Pair<Float, Float>): Where {
   return Between(this.name, rang.first, rang.second)
 }
 
-class DoubleColumn(name: String) : Column(name)
+class DoubleColumn(name: String) : ColumnInfo(name)
 
 // <
 infix fun DoubleColumn.lt(value: Double): Where {
@@ -255,7 +256,7 @@ infix fun DoubleColumn.btw(rang: Pair<Double, Double>): Where {
   return Between(this.name, rang.first, rang.second)
 }
 
-class StringColumn(name: String) : Column(name)
+class StringColumn(name: String) : ColumnInfo(name)
 
 // ==
 infix fun StringColumn.eq(value: String): Where {
