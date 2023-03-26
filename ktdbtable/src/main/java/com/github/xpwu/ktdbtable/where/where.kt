@@ -21,3 +21,15 @@ val Where.RawSQL: String
     return String.format(this.ArgSQL.replace("?", "%s"), *ba)
   }
 
+infix fun Where.and(where: Where): Where {
+  return And(arrayOf(this, where))
+}
+
+infix fun Where.or(where: Where): Where {
+  return Or(arrayOf(this, where))
+}
+
+val Where.not: Where
+  get() = Not(this)
+
+
