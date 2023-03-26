@@ -5,6 +5,10 @@ class In private constructor( field: String) : Where {
     argSql = values.joinToString(",", "(", ")")
   }
 
+  constructor (field: String, values: ShortArray) : this(field) {
+    argSql = values.joinToString(",", "(", ")")
+  }
+
   constructor (field: String, values: ByteArray) : this(field) {
     argSql = values.joinToString(",", "(", ")")
   }

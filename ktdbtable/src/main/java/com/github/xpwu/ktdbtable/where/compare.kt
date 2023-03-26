@@ -23,6 +23,11 @@ enum class EOperator(override val value: String) : op {
   NEQ("!="),
 }
 
+enum class Null(override val value: String): op {
+  IS(" IS NULL"),
+  NOT(" IS NOT NULL")
+}
+
 class Compare private constructor(field: String, op: op) : Where {
 
   constructor (field: String, op: LGEOperator, value: Long) : this(field, op) {
@@ -45,10 +50,8 @@ class Compare private constructor(field: String, op: op) : Where {
     argSql = if (value) "1" else "0"
   }
 
-  // is null
-  constructor (field: String) : this(field, object : op {
-    override val value = "  IS NULL"
-  }) {
+  // null or not null
+  constructor (field: String, op: Null) : this(field, op as op) {
     argSql = ""
   }
 
