@@ -127,7 +127,7 @@ fun TableInfo.toContentValuesFun(): String {
   val builder = StringBuilder()
   for (c in this.Columns) {
     builder.append("""
-      ${tableClass}.${c.FieldName} -> cv.put(column.toString(), this.${c.FieldName})
+      ${tableClass}.${c.FieldName}.toString() -> cv.put(column.toString(), this.${c.FieldName})
     """.trimIndent()).append("\n")
   }
 
@@ -135,7 +135,7 @@ fun TableInfo.toContentValuesFun(): String {
     fun ${tableClass}.ToContentValues(columns: List<ColumnInfo> = ${tableClass}.AllColumns()): ContentValues {
       val cv = ContentValues(columns.size)
       for (column in columns) {
-        when(column) {
+        when(column.toString()) {
           ${builder.toString().align("          ")}
           else -> {
             throw IllegalArgumentException("Illegal column ${'$'}column for $tableClass")
