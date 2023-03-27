@@ -19,7 +19,7 @@ private fun isJavaFile(element: TypeElement): Boolean {
 }
 
 private fun isNotNull(element: Element): Boolean {
-  return element.getAnnotation(NotNull::class.java) != null
+  return element.getAnnotation(NotNull::class.java) != null || element.asType().kind.isPrimitive
 }
 
 class Processor : AbstractProcessor() {

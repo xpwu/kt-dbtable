@@ -223,9 +223,12 @@ fun primaryKey(key: PrimaryKey): String {
 }
 
 fun ColumnInfo.constraint(errLog: (String) -> Unit): String {
-  // AUTOINCREMENT 必须是 INTEGER
-  if (isAutoincrement(this.ColumnAnno.primaryKey) && this.Typ != Type.INTEGER) {
-    errLog("${this.FieldName} is AUTOINCREMENT, but whose type is not INTEGER")
+  // AUTOINCREMENT 必须是 INTEGER except Boolean
+  if (isAutoincrement(this.ColumnAnno.primaryKey)
+    && this.DataType.kind != TypeKind.LONG && this.DataType.kind != TypeKind.INT
+    && this.DataType.kind != TypeKind.SHORT && this.DataType.kind != TypeKind.BYTE) {
+
+    errLog("${this.FieldName} is AUTOINCREMENT, but whose type is not Long, Int, Short or Byte")
     return ""
   }
 

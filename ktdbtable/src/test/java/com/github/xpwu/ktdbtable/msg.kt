@@ -11,8 +11,11 @@ class Msg {
 
   @Column("id")
   var Id: String? = null
-  @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
+  @Column("name")
   var Name: String = "xp"
+
+  @Column("local_no", primaryKey = PrimaryKey.ONLY_ONE_AUTO_INC)
+  var LocaleNo: Int = 0
 }
 
 fun Msg.Companion.Migrators(): Map<Version, Migration> {
