@@ -193,7 +193,7 @@ fun TableInfo.cursorToFun(): String {
   return """
     fun Cursor.To${tableClass}(out: ${tableClass}): ${tableClass}Has {
       val has = BooleanArray(${this.Columns.size})
-      for (i in 0 until this.count) {
+      for (i in 0 until this.columnCount) {
         if (this.isNull(i)) continue
         when(this.getColumnName(i)) {
           ${getBuilder.toString().align("          ")}
