@@ -31,18 +31,15 @@ enum class Null(override val value: String): op {
 class Compare private constructor(field: String, op: op, value: Any) : Where {
 
   constructor (field: String, op: LGEOperator, value: Long) : this(field, op, value as Any)
-
   constructor (field: String, op: LGEOperator, value: Byte) : this(field, op, value.toLong())
-
   constructor (field: String, op: LGEOperator, value: Int) : this(field, op, value.toLong())
-
   constructor (field: String, op: LGEOperator, value: Short) : this(field, op, value.toLong())
 
   constructor (field: String, op: LGOperator, value: Double) : this(field, op, value as Any)
-
   constructor (field: String, op: LGOperator, value: Float) : this(field, op, value.toDouble())
 
-  constructor (field: String, value: Boolean) : this(field, EOperator.EQ, if (value) 1 else 0)
+  // true => '!=0'; false => '=0'
+  constructor (field: String, value: Boolean) : this(field, if (value) EOperator.NEQ else EOperator.EQ, 0)
 
   // null or not null
   constructor (field: String, op: Null) : this(field, op, "" as Any)
