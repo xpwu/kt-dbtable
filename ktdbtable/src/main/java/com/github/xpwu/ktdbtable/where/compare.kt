@@ -28,11 +28,9 @@ enum class Null(override val value: String): op {
   NOT(" IS NOT NULL")
 }
 
-class Compare private constructor(field: String, op: op) : Where {
+class Compare private constructor(field: String, op: op, value: Any) : Where {
 
-  constructor (field: String, op: LGEOperator, value: Long) : this(field, op) {
-    argSql = value.toString()
-  }
+  constructor (field: String, op: LGEOperator, value: Long) : this(field, op, value as Any)
 
   constructor (field: String, op: LGEOperator, value: Byte) : this(field, op, value.toLong())
 
@@ -40,33 +38,23 @@ class Compare private constructor(field: String, op: op) : Where {
 
   constructor (field: String, op: LGEOperator, value: Short) : this(field, op, value.toLong())
 
-  constructor (field: String, op: LGOperator, value: Double) : this(field, op) {
-    argSql = value.toString()
-  }
+  constructor (field: String, op: LGOperator, value: Double) : this(field, op, value as Any)
 
   constructor (field: String, op: LGOperator, value: Float) : this(field, op, value.toDouble())
 
-  constructor (field: String, value: Boolean) : this(field, EOperator.EQ) {
-    argSql = if (value) "1" else "0"
-  }
+  constructor (field: String, value: Boolean) : this(field, EOperator.EQ, if (value) 1 else 0)
 
   // null or not null
-  constructor (field: String, op: Null) : this(field, op as op) {
-    argSql = ""
+  constructor (field: String, op: Null) : this(field, op, "" as Any)
+
+  constructor(field: String, op: EOperator, value: String) : this(field, op, "?" as Any) {
+    bindArgs = arrayOf(value)
   }
 
-  constructor(field: String, op: EOperator, value: String) : this(field, op) {
-    argSql = "?"
-    bindArgs.add(value)
-  }
+  private var bindArgs = emptyArray<String>()
 
-  private lateinit var argSql: String
+  override val ArgSQL: String = field + op.value + value.toString()
 
-  private val bindArgs = ArrayList<String>(1)
-
-  override val ArgSQL: String = field + op.value + argSql
-
-  override val BindArgs: Array<String> by lazy {
-    this.bindArgs.toArray(emptyArray())
-  }
+  override val BindArgs: Array<String>
+    get() = bindArgs
 }

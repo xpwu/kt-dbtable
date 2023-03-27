@@ -1,11 +1,10 @@
 package com.github.xpwu.ktdbtable.where
 
-open class Like(field: String, private val pattern: String) : Where {
+open class Like(field: String, pattern: String) : Where {
 
   override val ArgSQL: String = "$field LIKE ? "
 
-  override val BindArgs: Array<String>
-    get() = arrayOf(pattern)
+  override val BindArgs: Array<String> = arrayOf(pattern)
 }
 
 // 模糊搜索
