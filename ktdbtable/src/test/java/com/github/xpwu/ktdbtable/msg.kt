@@ -51,6 +51,9 @@ class Msg {
 
   @Column("noba")
   var NoBA: ByteArray? = null
+
+  @Column("ts")
+  var Ts: Int = 0
 }
 
 fun Msg.Companion.Migrators(): Map<Version, Migration> {
@@ -89,7 +92,7 @@ class Group {
 class GroupInfo {
   companion object
 
-  @Column("id", primaryKey = PrimaryKey.MULTI_DESC)
+  @Column("id", primaryKey = PrimaryKey.MULTI_DESC, sequence = 1)
   var Id: String = ""
   @Column("name")
   var Name: String = "xp"

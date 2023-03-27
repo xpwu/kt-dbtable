@@ -59,9 +59,9 @@ annotation class Column(
   // 为了防止修改属性名，而造成列名非预期的自动修改，name在注解中必须明确赋值
   val name: String,
   val primaryKey: PrimaryKey = PrimaryKey.FALSE,
+  val sequence:Int = 0,
   val notNull: Boolean = false,
   val defaultValue: String = "",
-  val sequence:Int = 0
 )
 
 enum class PrimaryKey(val result:String) {
@@ -91,4 +91,4 @@ enum class PrimaryKey(val result:String) {
 annotation class Index(val unique:Boolean = false,
                        val name: String = "",
                        val desc:Boolean = false,
-                       val sequence:Int = 0)
+                       val sequence:Int = 0, )

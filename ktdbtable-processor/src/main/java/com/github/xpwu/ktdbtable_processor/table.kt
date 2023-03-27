@@ -296,6 +296,15 @@ typealias IndexSQL = String
 fun ArrayList<Triple<String, String, Int>>.toString(errLog: (String) -> Unit): String {
   if (this.isEmpty()) return ""
 
+  val set: MutableSet<Int> = emptySet<Int>().toMutableSet()
+  for ((_, _, seq) in this) {
+    if (set.contains(seq)) {
+      errLog("the sequence($seq) of combined_index are too much")
+      return ""
+    }
+    set.add(seq)
+  }
+
   this.sortWith { triple: Triple<String, String, Int>, triple2: Triple<String, String, Int> ->
     return@sortWith triple.third - triple2.third
   }
@@ -401,7 +410,7 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
       if (!((lastPrimaryKey == PrimaryKey.MULTI_DESC || lastPrimaryKey == PrimaryKey.MULTI)
         && (nowPrimaryKey == PrimaryKey.MULTI_DESC || nowPrimaryKey == PrimaryKey.MULTI))) {
 
-        logger.error(this.Type, "${this.Name}: PrimaryKey.ONLY_ONE_xx too much")
+        logger.error(this.Type, "${this.Name}: PrimaryKey.ONLY_ONE_xx are too much")
         return ""
       }
     }
@@ -415,6 +424,15 @@ fun TableInfo.sqlForCreating(logger: Logger): String {
         )
       )
     }
+  }
+
+  val set: MutableSet<Int> = emptySet<Int>().toMutableSet()
+  for ((_, seq) in mulPrimaryKey) {
+    if (set.contains(seq)) {
+      logger.error(this.Type, "the sequence($seq) of PrimaryKey.MULTI_xx are too much")
+      return ""
+    }
+    set.add(seq)
   }
 
   mulPrimaryKey.sortWith { _1, _2 -> _1.second - _2.second }

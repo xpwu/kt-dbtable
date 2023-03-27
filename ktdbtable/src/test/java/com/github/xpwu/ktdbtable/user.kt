@@ -36,9 +36,11 @@ class NameInfo {
   @Column("bytea")
   var ByteA: ByteArray  = byteArrayOf()
 
+  @Index(false, "multi")
   @Column("IntF")
   var IntF: Int  = 0
 
+  @Index(false, "multi", sequence = 1)
   @Column("ByteF")
   var ByteF: Byte  = 0
 
