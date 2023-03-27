@@ -34,6 +34,14 @@ dependencies {
 5、创建新表：定义表的类，在使用此表的地方会自动创建，表名必须通过TableNameIn(db)获取   
 6、其他复杂升级：在表的类代码中实现 fun xxx.Companion.Migrators(): Map<Version, Migration>
 同时在@Table中指定新的版本号  
+### 注意：ALTER xxx ADD COLUMN xxx 有如下要求 [alter](https://www.sqlite.org/lang_altertable.html)
+1. The column may not have a PRIMARY KEY or UNIQUE constraint.
+2. The column may not have a default value of CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP, or an expression in parentheses.
+3. If a NOT NULL constraint is specified, then the column must have a default value other than NULL.
+4. If foreign key constraints are enabled and a column with a REFERENCES clause is added, the column must have a default value of NULL.
+5. The column may not be GENERATED ALWAYS ... STORED, though VIRTUAL columns are allowed.
+* 其中：UNIQUE 在本库中是通过CREATE UNIQUE INDEX 而添加，所有本库中支持UNIQUE列的添加
+
 
 ## 3、库与表的绑定  
 1、使用 xxx.TableNameIn(db) 方法时，会自动在db库中创建xxx表，并创建索引；   
