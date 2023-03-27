@@ -46,16 +46,23 @@ fun printTypeError(errorType: String): String {
 
 val entity2column = mapOf<String, Type>(
   Int::class.java.canonicalName to Type.INTEGER,
+  "java.lang.Integer" to Type.INTEGER,
 //  UInt::class.java.canonicalName to Type.INTEGER,
   Short::class.java.canonicalName to Type.INTEGER,
+  "java.lang.Short" to Type.INTEGER,
 //  UShort::class.java.canonicalName to Type.INTEGER,
   Byte::class.java.canonicalName to Type.INTEGER,
+  "java.lang.Byte" to Type.INTEGER,
 //  UByte::class.java.canonicalName to Type.INTEGER,
   Long::class.java.canonicalName to Type.INTEGER,
+  "java.lang.Long" to Type.INTEGER,
 //  ULong::class.java.canonicalName to Type.INTEGER,
   Boolean::class.java.canonicalName to Type.INTEGER,
+  "java.lang.Boolean" to Type.INTEGER,
   Float::class.java.canonicalName to Type.REAL,
+  "java.lang.Float" to Type.REAL,
   Double::class.java.canonicalName to Type.REAL,
+  "java.lang.Double" to Type.REAL,
   String::class.java.canonicalName to Type.TEXT,
   ByteArray::class.java.canonicalName to Type.BLOB,
 //  UByteArray::class.java.canonicalName to Type.BLOB,
@@ -66,12 +73,19 @@ val entity2column = mapOf<String, Type>(
 
 val getFun = mapOf<String, (String)->String >(
   Int::class.java.canonicalName to {i -> "getInt($i)"},
+  "java.lang.Integer" to {i -> "getInt($i)"},
   Short::class.java.canonicalName to {i -> "getShort($i)"},
+  "java.lang.Short" to {i -> "getShort($i)"},
   Byte::class.java.canonicalName to {i -> "getShort($i).toByte()"},
+  "java.lang.Byte" to {i -> "getShort($i).toByte()"},
   Long::class.java.canonicalName to {i -> "getLong($i)"},
+  "java.lang.Long" to {i -> "getLong($i)"},
   Boolean::class.java.canonicalName to {i -> "getInt($i) != 0"},
+  "java.lang.Boolean" to {i -> "getInt($i) != 0"},
   Float::class.java.canonicalName to {i -> "getFloat($i)"},
+  "java.lang.Float" to {i -> "getFloat($i)"},
   Double::class.java.canonicalName to {i -> "getDouble($i)"},
+  "java.lang.Double" to {i -> "getDouble($i)"},
   String::class.java.canonicalName to {i -> "getString($i)"},
   ByteArray::class.java.canonicalName to {i -> "getBlob($i)"},
 )
@@ -87,12 +101,19 @@ class ColumnInfo(
 
 val columnTypePre = mapOf<String, String>(
   Boolean::class.java.canonicalName to "Boolean",
+  "java.lang.Boolean" to "Boolean",
   Long::class.java.canonicalName to "Long",
+  "java.lang.Long" to "Long",
   Int::class.java.canonicalName to "Int",
+  "java.lang.Integer" to "Int",
   Short::class.java.canonicalName to "Short",
+  "java.lang.Short" to "Short",
   Byte::class.java.canonicalName to "Byte",
+  "java.lang.Byte" to "Byte",
   Float::class.java.canonicalName to "Float",
+  "java.lang.Float" to "Float",
   Double::class.java.canonicalName to "Double",
+  "java.lang.Double" to "Double",
   String::class.java.canonicalName to "String",
   ByteArray::class.java.canonicalName to "ByteArray",
 )
@@ -100,7 +121,7 @@ val columnTypePre = mapOf<String, String>(
 fun ColumnInfo.outField(tableClass: String): String {
   return """
     val ${tableClass}.Companion.${this.FieldName}
-      get() = ${columnTypePre[this.DataType.toString()]}Column("${this.ColumnAnno.name}")
+      get() = ${columnTypePre[this.DataType.toString()]?:"Error"}Column("${this.ColumnAnno.name}")
   """.trimIndent()
 }
 
