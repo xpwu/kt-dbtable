@@ -41,12 +41,11 @@ The new column may take any of the forms permissible in a CREATE TABLE statement
  *
  * @param name: 表的列名
  *
- *   https://www.sqlite.org/lang_createtable.html
  * @param primaryKey PRIMARY KEY 约束，字段不能是 option 的(PRIMARY KEY 默认是 NOT NULL)。
- *  MULTI_约束的顺序与sequence定义的顺序一致
+ *  MULTI_约束的顺序与sequence定义的顺序一致。https://www.sqlite.org/lang_createtable.html
  *
- * @param notNull 谨慎使用此属性，新增列时，会造成O(n)的时间复杂度。
- *  NOT NULL, 如果属性是 option 的定义，notNull必须为false，即使设定notNull为true，该设置也不生效。
+ * @param notNull NOT NULL, 如果属性是 option 的定义，notNull必须为false，即使设定notNull为true，该设置也不生效。
+ *  如果设置 true，对于新增字段，按照alter的要求，都应该设置defaultValue
  *
  * @param defaultValue 以字符串的方式设置字段的默认值，设置的值在创建表时直接使用于 DEFAULT xxx 中
  *
@@ -60,6 +59,7 @@ annotation class Column(
   val name: String,
   val primaryKey: PrimaryKey = PrimaryKey.FALSE,
   val sequence:Int = 0,
+  // 如果设置 true，对于新增字段，按照alter的要求，都应该设置defaultValue
   val notNull: Boolean = false,
   val defaultValue: String = "",
 )
