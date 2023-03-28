@@ -92,3 +92,23 @@ annotation class Index(val unique:Boolean = false,
                        val name: String = "",
                        val desc:Boolean = false,
                        val sequence:Int = 0, )
+
+
+/**
+ *
+ *  支持其他实现了与 ByteArray 互转接口的类型
+ *
+ *  FromByteArray：注解一个函数，函数返回值就是目标的类型，函数只有一个 ByteArray 类型的参数
+ *
+ *  ToByteArray：注解一个函数，函数返回值就是 ByteArray，函数只有一个 目标类型 类型的参数
+ *
+ */
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.BINARY)
+annotation class FromByteArray()
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.BINARY)
+annotation class ToByteArray()
+

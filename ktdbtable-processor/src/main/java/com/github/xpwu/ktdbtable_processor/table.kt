@@ -71,6 +71,10 @@ val entity2column = mapOf<String, Type>(
 //  Array<UByte>::class.java.canonicalName to Type.BLOB,
 )
 
+typealias FunName = String
+val fromByteArray = emptyMap<String, FunName>().toMutableMap()
+val toByteArray = emptyMap<String, FunName>().toMutableMap()
+
 val getFun = mapOf<String, (String)->String >(
   Int::class.java.canonicalName to {i -> "getInt($i)"},
   "java.lang.Integer" to {i -> "getInt($i)"},
@@ -96,7 +100,8 @@ class ColumnInfo(
   val ColumnAnno: Column,
   val NotNull: Boolean,
   val IndexAnnotations: Array<Index>,
-  val DataType: TypeMirror
+  val DataType: TypeMirror,
+  val NotPrimaryType: Boolean,
 )
 
 val columnTypePre = mapOf<String, String>(
@@ -121,7 +126,7 @@ val columnTypePre = mapOf<String, String>(
 fun ColumnInfo.outField(tableClass: String): String {
   return """
     val ${tableClass}.Companion.${this.FieldName}
-      get() = ${columnTypePre[this.DataType.toString()]?:"Error"}Column("${this.ColumnAnno.name}")
+      get() = ${columnTypePre[this.DataType.toString()]?:"Else"}Column("${this.ColumnAnno.name}")
   """.trimIndent()
 }
 
@@ -147,8 +152,9 @@ fun TableInfo.toContentValuesFun(): String {
 
   val builder = StringBuilder()
   for (c in this.Columns) {
+    val f = toByteArray[c.DataType.toString()]?:""
     builder.append("""
-      ${tableClass}.${c.FieldName}.toString() -> cv.put(column.toString(), this.${c.FieldName})
+      ${tableClass}.${c.FieldName}.toString() -> cv.put(column.toString(), ${if (c.NotPrimaryType) "$f(" else ""}this.${c.FieldName}${if (c.NotPrimaryType) ")" else ""})
     """.trimIndent()).append("\n")
   }
 
@@ -197,10 +203,17 @@ fun TableInfo.cursorToFun(): String {
 
   val getBuilder = StringBuilder()
   for (i in 0 until  this.Columns.size) {
-    val fieldName = this.Columns[i].FieldName
-    val funName = (getFun[this.Columns[i].DataType.toString()]?:{""})("i")
+    val c = this.Columns[i]
+    val fieldName = c.FieldName
+    var funName = (getFun[c.DataType.toString()]?:{""})("i")
+    if (c.NotPrimaryType) {
+      funName = "getBlob(i)"
+    }
+
+    val f = fromByteArray[c.DataType.toString()]?:""
+
     getBuilder.append("""
-      ${tableClass}.${fieldName}.toString() -> { out.${fieldName} = this.${funName}; has[${i}] = true }
+      ${tableClass}.${fieldName}.toString() -> { out.${fieldName} =  ${if (c.NotPrimaryType) "$f(" else ""}this.${funName}${if (c.NotPrimaryType) ")" else ""}; has[${i}] = true }
     """.trimIndent()).append("\n")
   }
 

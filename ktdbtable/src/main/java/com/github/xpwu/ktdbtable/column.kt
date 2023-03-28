@@ -35,6 +35,8 @@ val ColumnInfo.IsNull : Where
 val ColumnInfo.IsNotNull : Where
   get() = Compare(this.name, Null.NOT)
 
+class ElseColumn(name: String) : ColumnInfo(name)
+
 class ByteArrayColumn(name: String) : ColumnInfo(name)
 
 class LongColumn(name: String) : ColumnInfo(name)

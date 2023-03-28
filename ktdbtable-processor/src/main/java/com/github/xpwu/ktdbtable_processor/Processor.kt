@@ -1,8 +1,6 @@
 package com.github.xpwu.ktdbtable_processor
 
-import com.github.xpwu.ktdbtble.annotation.Column
-import com.github.xpwu.ktdbtble.annotation.Index
-import com.github.xpwu.ktdbtble.annotation.Table
+import com.github.xpwu.ktdbtble.annotation.*
 import org.jetbrains.annotations.NotNull
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
@@ -32,7 +30,7 @@ class Processor : AbstractProcessor() {
 
   internal var outDirectory = ""
 
-  internal var processingEnv: ProcessingEnvironment? = null
+  internal lateinit var processingEnv1: ProcessingEnvironment
 
   internal var extensionMigs = emptySet<String>().toMutableSet()
   internal var extensionInits = emptySet<String>().toMutableSet()
@@ -41,7 +39,7 @@ class Processor : AbstractProcessor() {
     super.init(processingEnv)
     logger = Logger(processingEnv.messager)
     outDirectory = processingEnv.options["kapt.kotlin.generated"]!!
-    this.processingEnv = processingEnv
+    this.processingEnv1 = processingEnv
   }
 
   override fun getSupportedSourceVersion(): SourceVersion? {
@@ -51,6 +49,8 @@ class Processor : AbstractProcessor() {
   override fun getSupportedAnnotationTypes(): Set<String> {
     val annotations: MutableSet<String> = LinkedHashSet()
     annotations.add(Table::class.qualifiedName!!)
+    annotations.add(FromByteArray::class.qualifiedName!!)
+    annotations.add(ToByteArray::class.qualifiedName!!)
     return annotations
   }
 
@@ -60,6 +60,8 @@ class Processor : AbstractProcessor() {
     }
 
     this.ktExtension(roundEnv)
+
+    this.processFromTo(roundEnv)
 
     val tables: MutableSet<TableInfo> = emptySet<TableInfo>().toMutableSet()
 
@@ -121,6 +123,38 @@ class Processor : AbstractProcessor() {
 
     write(outDirectory, "com.github.xpwu.ktdbtable", "TableContainerImpl", tableContainer)
     return true
+  }
+}
+
+fun Processor.processFromTo(roundEnv: RoundEnvironment) {
+  for (e in roundEnv.getElementsAnnotatedWith(FromByteArray::class.java)) {
+    if (e.kind != ElementKind.METHOD) {
+      continue
+    }
+
+    e as ExecutableElement
+
+    if (e.parameters.size != 1) {
+      continue
+    }
+
+    fromByteArray[e.returnType.toString()] =
+      this.processingEnv1.elementUtils.getPackageOf(e).qualifiedName.toString() + "." + e.simpleName.toString()
+  }
+
+  for (e in roundEnv.getElementsAnnotatedWith(ToByteArray::class.java)) {
+    if (e.kind != ElementKind.METHOD) {
+      continue
+    }
+
+    e as ExecutableElement
+
+    if (e.parameters.size != 1 || e.returnType.toString() != ByteArray::class.java.canonicalName) {
+      continue
+    }
+
+    toByteArray[e.parameters[0].asType().toString()] =
+      this.processingEnv1.elementUtils.getPackageOf(e).qualifiedName.toString() + "." + e.simpleName.toString()
   }
 }
 
@@ -233,12 +267,21 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
     }
 
     val columnA = field.getAnnotation(Column::class.java) ?: continue
-    val ty = entity2column[field.asType().toString()]
+    var elseT = false
+    var ty = entity2column[field.asType().toString()]
+
+    if (ty == null
+        && fromByteArray[field.asType().toString()] != null
+        && toByteArray[field.asType().toString()] != null) {
+      ty = Type.BLOB
+      elseT = true
+    }
 
     if (ty == null) {
       this.logger.error(e, printTypeError(e.asType().toString()))
       return false
     }
+
     if (names.contains(columnA.name)) {
       this.logger.error(e, "column name(${columnA.name}) is duplicate")
       return false
@@ -253,7 +296,8 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
         columnA,
         isNotNull(field),
         indexA,
-        field.asType()
+        field.asType(),
+        elseT
       )
     )
 
@@ -346,7 +390,7 @@ fun Processor.processMigInit(table: TypeElement):
 
 fun Processor.outATable(tableInfo: TableInfo) {
   val tableClass = tableInfo.Type.simpleName.toString()
-  val packageName = this.processingEnv!!.elementUtils.getPackageOf(tableInfo.Type).toString()
+  val packageName = this.processingEnv1.elementUtils.getPackageOf(tableInfo.Type).toString()
 
   val columns = StringBuilder()
   for (c in tableInfo.Columns) {
