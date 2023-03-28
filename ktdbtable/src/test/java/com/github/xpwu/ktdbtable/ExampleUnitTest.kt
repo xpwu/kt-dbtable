@@ -1,6 +1,7 @@
 package com.github.xpwu.ktdbtable
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
@@ -24,6 +25,15 @@ class ExampleUnitTest {
   @Test
   fun msg() {
     assertEquals(Msg.Id.toString(), "id")
+  }
+
+  @Test
+  fun column() {
+    assertEquals(ByteArrayColumn("one"), LongColumn("one"))
+    assertEquals(ByteArrayColumn("two"), LongColumn("two"))
+    assertNotEquals(LongColumn("one"), LongColumn("two"))
+
+    assertEquals(LongColumn("one").hashCode(), "one".hashCode())
   }
 }
 

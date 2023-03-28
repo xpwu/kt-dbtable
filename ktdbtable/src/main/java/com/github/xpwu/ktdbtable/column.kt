@@ -7,26 +7,21 @@ open class ColumnInfo(val name: String) {
     return name
   }
 
-  /**
-  //  override fun hashCode(): Int {
-  //    return name.hashCode()
-  //  }
-  //
-  //  override fun equals(other: Any?): Boolean {
-  //    if (this === other) return true
-  //    if (javaClass != other?.javaClass) return false
-  //
-  //    other as Column
-  //
-  //    if (name != other.name) return false
-  //
-  //    return true
-  //  }
-  //
-  //  operator fun component1(): String {
-  //    return name
-  //  }
-   */
+
+  override fun hashCode(): Int {
+    return name.hashCode()
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+
+    if (other !is ColumnInfo) return false
+
+    if (name != other.name) return false
+
+    return true
+  }
+
 }
 
 val ColumnInfo.IsNull : Where
