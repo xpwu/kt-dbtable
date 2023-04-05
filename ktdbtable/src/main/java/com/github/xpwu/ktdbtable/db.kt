@@ -46,16 +46,15 @@ class DB<T>(internal val dber: DBer<T>, tablesBinding: List<TableBinding> = empt
             upgrade: Boolean = true) : UnderlyingDBer<T> by dber {
   internal val tableCache = syncTableCache()
   internal var uContext: upgradeContext = upgradeContext()
-  internal val binding2name: MutableMap<KClass<*>, String> = emptyMap<KClass<*>, String>().toMutableMap()
-  internal val name2binding: MutableMap<String, KClass<*>> = emptyMap<String, KClass<*>>().toMutableMap()
+
+  internal val binding2name: Map<KClass<*>, String> = mapOf(*tablesBinding.toTypedArray())
+  internal val name2binding: Map<String, KClass<*>> =
+    mapOf(*tablesBinding.map { return@map Pair<String, KClass<*>>(it.second, it.first) }.toTypedArray())
+
   // real table name
-  internal val opened: MutableSet<String> = emptySet<String>().toMutableSet()
+  internal val opened: syncMutableSet<String> = syncMutableSet()
 
   init {
-    for (binding in tablesBinding) {
-      binding2name[binding.first] = binding.second
-      name2binding[binding.second] = binding.first
-    }
 
     for (table in tablesBinding) {
       if (!this.Exist(table.second)) {
@@ -82,6 +81,51 @@ class DB<T>(internal val dber: DBer<T>, tablesBinding: List<TableBinding> = empt
     // 需要重新OnOpen，确保是最新的状态
     total(this.OnOpen())
     this.OnUpgrade(onProgress)
+  }
+}
+
+class syncMutableSet<E> {
+  private val values: MutableSet<E> = emptySet<E>().toMutableSet()
+  private val lock = ReentrantReadWriteLock()
+
+  fun add(element: E): Boolean {
+    val wLock = lock.writeLock()
+    wLock.lock()
+    val ret = values.add(element)
+    wLock.unlock()
+    return ret
+  }
+
+  fun addAll(elements: Collection<E>): Boolean {
+    val wLock = lock.writeLock()
+    wLock.lock()
+    val ret = values.addAll(elements)
+    wLock.unlock()
+    return ret
+  }
+
+  fun isEmpty(): Boolean {
+    val rLock = lock.readLock()
+    rLock.lock()
+    val ret = values.isEmpty()
+    rLock.unlock()
+    return ret
+  }
+
+  fun contains(element: @UnsafeVariance E): Boolean {
+    val rLock = lock.readLock()
+    rLock.lock()
+    val ret = values.contains(element)
+    rLock.unlock()
+    return ret
+  }
+
+  fun containsAll(elements: Collection<@UnsafeVariance E>): Boolean {
+    val rLock = lock.readLock()
+    rLock.lock()
+    val ret = values.containsAll(elements)
+    rLock.unlock()
+    return ret
   }
 }
 
@@ -137,6 +181,7 @@ fun DB<*>.Exist(table: String): Boolean {
   val cursor =
     this.dber.Query("SELECT name FROM $sqlMaster WHERE type='table' AND name=?", arrayOf(table))
   val ret: Boolean = cursor.count == 1
+
 
   if (ret) {
     this.tableCache.Add(table)
@@ -378,10 +423,11 @@ private fun DB<*>.OnOpen(): Int {
   val oldVersions = this.OldVersions(allTables)
 
   val allMigrations = emptyList<MInfo>().toMutableList()
+  // 能找到的 都是opened，后续逻辑也会自动升级table
+  this.opened.addAll(allTables)
+
   for (i in 0 until allTables.size) {
     val nowV = Table.GetInfo(this.unBinding(allTables[i]))?.Version ?: continue
-    // 能找到的 都是opened
-    this.opened.add(allTables[i])
 
     if (nowV == oldVersions[i]) continue
     val res = Table.GetMigrations(this.unBinding(allTables[i]), oldVersions[i], nowV)
