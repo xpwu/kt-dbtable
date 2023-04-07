@@ -9,25 +9,18 @@ class DBQueue<T>(logName: String = "db",
                  upgrade: Boolean = true,
                  init: suspend ()->DBer<T>){
 
-  lateinit var db: DB<T>
-    private set
-
   private val scope = CoroutineScope(CoroutineName("DBQueue-$logName"))
 
-  internal val queue: Channel<suspend ()->Unit> = Channel(UNLIMITED)
+  internal val queue: Channel<suspend (DB<T>)->Unit> = Channel(UNLIMITED)
 
   init {
     // consumer
     scope.launch {
+      val db = DB(init(), tablesBinding, upgrade)
+
       while (isActive) {
         val exe = queue.receive()
-        exe()
-      }
-    }
-
-    scope.launch {
-      queue.send {
-        db = DB(init(), tablesBinding, upgrade)
+        exe(db)
       }
     }
   }
@@ -40,18 +33,12 @@ class DBQueue<T>(logName: String = "db",
 suspend operator fun <R, T> DBQueue<T>.invoke(block: suspend (DB<T>)->R): R {
   val ch = Channel<R>(1)
   queue.send {
-    ch.send(block(this.db))
+    ch.send(block(it))
   }
 
   return ch.receive()
 }
 
 suspend fun <R, T> DBQueue<T>.en(block: suspend (DB<T>)->R): R {
-  val ch = Channel<R>(1)
-  queue.send {
-    ch.send(block(this.db))
-  }
-
-  return ch.receive()
+  return this(block)
 }
-
