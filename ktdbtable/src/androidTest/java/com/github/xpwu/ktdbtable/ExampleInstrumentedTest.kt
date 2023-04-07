@@ -7,6 +7,7 @@ import com.github.xpwu.ktdbtble.annotation.Column
 import com.github.xpwu.ktdbtble.annotation.Index
 import com.github.xpwu.ktdbtble.annotation.PrimaryKey
 import com.github.xpwu.ktdbtble.annotation.Table
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,6 +39,27 @@ class ExampleInstrumentedTest {
       assertEquals( cursor.getString(1), "xp")
       assertEquals( cursor.getInt(2), 232323)
     }
+  }
+
+  @Test
+  fun coroutine() = runBlocking {
+    val dbQueue = DBQueue {
+      return@DBQueue SQLiteAdapter(sql)
+    }
+
+    val ret: String = dbQueue {
+      val name = User.TableNameIn(it)
+      val cursor = it.UnderlyingDB.query(name, null, "${User.Id}=?", arrayOf("0xwew3"), null, null, null)
+      var r = ""
+      while (cursor.moveToNext()) {
+        r = cursor.getString(0)
+        break
+      }
+
+      r
+    }
+
+    assertEquals(ret, "0xwew3")
   }
 }
 
