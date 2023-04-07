@@ -181,7 +181,7 @@ fun DB<*>.Exist(table: String): Boolean {
   val cursor =
     this.dber.Query("SELECT name FROM $sqlMaster WHERE type='table' AND name=?", arrayOf(table))
   val ret: Boolean = cursor.count == 1
-
+  cursor.close()
 
   if (ret) {
     this.tableCache.Add(table)
@@ -198,6 +198,8 @@ fun DB<*>.AllTables(): ArrayList<String> {
     ret.add(cursor.getString(0))
     this.tableCache.Add(cursor.getString(0))
   }
+  cursor.close()
+
   return ret
 }
 
@@ -208,6 +210,7 @@ fun DB<*>.AllIndexes(table: String): ArrayList<String> {
   while (cursor.moveToNext()) {
     ret.add(cursor.getString(0))
   }
+  cursor.close()
   return ret
 }
 
@@ -217,6 +220,7 @@ fun DB<*>.AllIndexes(): ArrayList<String> {
   while (cursor.moveToNext()) {
     ret.add(cursor.getString(0))
   }
+  cursor.close()
   return ret
 }
 
