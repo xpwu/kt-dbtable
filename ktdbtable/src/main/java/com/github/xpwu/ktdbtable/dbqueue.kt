@@ -46,3 +46,12 @@ suspend operator fun <R, T> DBQueue<T>.invoke(block: suspend (DB<T>)->R): R {
   return ch.receive()
 }
 
+suspend fun <R, T> DBQueue<T>.en(block: suspend (DB<T>)->R): R {
+  val ch = Channel<R>(1)
+  queue.send {
+    ch.send(block(this.db))
+  }
+
+  return ch.receive()
+}
+
