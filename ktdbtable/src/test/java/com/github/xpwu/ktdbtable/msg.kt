@@ -70,6 +70,13 @@ fun Msg.Companion.Update(db: DB<SQLiteDatabase>) {
   db.UnderlyingDB.update(name, Msg().ToContentValues(), "", null)
 }
 
+suspend fun Msg.Companion.Update(dbQueue: DBQueue<SQLiteDatabase>) {
+  dbQueue {
+    val name = Msg.TableNameIn(it)
+    it.UnderlyingDB.update(name, Msg().ToContentValues(), "", null)
+  }
+}
+
 @Table("group")
 class Group {
   companion object
