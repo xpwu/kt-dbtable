@@ -44,6 +44,7 @@ class DBQueue<T>(logName: String = "db",
 }
 
 suspend operator fun <R, T> DBQueue<T>.invoke(block: suspend (DB<T>)->R): R {
+  // process nest 
   val dbctx = currentCoroutineContext()[dbCtx.Key]
   if (dbctx != null) {
     Log.d(debugTag, "nest is ok")
