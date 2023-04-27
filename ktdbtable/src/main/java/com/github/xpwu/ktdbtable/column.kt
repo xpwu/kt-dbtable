@@ -266,7 +266,7 @@ infix fun StringColumn.neq(value: String): Where {
 }
 
 // in
-infix fun StringColumn.`in`(values: ByteArray): Where {
+infix fun StringColumn.`in`(values: Array<String>): Where {
   return In(this.name, values)
 }
 
