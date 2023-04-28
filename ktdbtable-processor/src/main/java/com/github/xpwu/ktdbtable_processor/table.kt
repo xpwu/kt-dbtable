@@ -327,13 +327,14 @@ fun ArrayList<Triple<String, String, Int>>.toString(errLog: (String) -> Unit): S
   builder.append("(")
   builder.append(column)
   for (i in 1 until this.size) {
-    if (unique != this[i].first) {
+    val (uniquei, columni, _) = this[i]
+    if (unique != uniquei) {
       errLog("unique flags are not the same with each other")
       return ""
     }
 
     builder.append(", ")
-    builder.append(column)
+    builder.append(columni)
   }
   builder.append(")")
 
