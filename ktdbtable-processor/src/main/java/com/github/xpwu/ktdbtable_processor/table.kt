@@ -232,7 +232,8 @@ fun TableInfo.cursorToFun(): String {
         when(this.getColumnName(i)) {
           ${getBuilder.toString().align("          ")}
           else -> {
-            throw IllegalArgumentException("Illegal column ${'$'}{this.getColumnName(i)} for User")
+            // nothing to do 
+            // the column is in the db, but not in the class ${tableClass} now.
           }
         }
       }
