@@ -44,6 +44,46 @@ class ExampleInstrumentedTest {
   }
 
   @Test
+  fun query() {
+    val table = User.TableNameIn(db)
+    val where = User.Id.eq("0xwew3")
+    val cursor = db.UnderlyingDB.query(table, where)
+    while (cursor.moveToNext()) {
+      val user = User()
+      cursor.ToUser(user)
+      assertEquals( "0xwew3", user.Id)
+      assertEquals( "xp", user.Name)
+      assertEquals( 232323, user.Time)
+      assertEquals( 4, user.Add.toInt())
+    }
+  }
+
+//  @Test
+//  fun queryKeyword() {
+//    val table = User.TableNameIn(db)
+//    val where = User.Add.eq(4)
+//    val cursor = db.UnderlyingDB.query(table, where)
+//    while (cursor.moveToNext()) {
+//      val user = User()
+//      cursor.ToUser(user)
+//      assertEquals( "0xwew3", user.Id)
+//      assertEquals( "xp", user.Name)
+//      assertEquals( 232323, user.Time)
+//      assertEquals( 4, user.Add.toInt())
+//    }
+//  }
+
+//  @Test
+//  fun deleteColumn() {
+//    val table = User.TableNameIn(db)
+//    //
+//    val value = ContentValues(5)
+//    value.put(User.Id.toString(), "testDeleteColumn")
+//    value.put(User.Time.toString(), )
+//    db.UnderlyingDB.insertWithOnConflict(table, null, value.escape(), CONFLICT_REPLACE)
+//  }
+
+  @Test
   fun coroutine() = runBlocking {
     val dbQueue = DBQueue {
       return@DBQueue SQLiteAdapter(sql)
