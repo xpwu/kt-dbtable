@@ -58,6 +58,25 @@ class ExampleInstrumentedTest {
     }
   }
 
+  @Test
+  fun deleteColumn() {
+    val table = User.TableNameIn(db)
+      val where = User.Id.eq("0xwew3")
+      val cursor = db.UnderlyingDB.query(table, where)
+      while (cursor.moveToNext()) {
+        val user = UserDelete()
+        cursor.ToUserDelete(user)
+        assertEquals( "0xwew3", user.Id)
+        assertEquals( "xp", user.Name)
+        assertEquals( 4, user.Add.toInt())
+
+        // deleted column for UserDelete
+        assertEquals( 232323, cursor.getInt(2))
+        assertEquals( User.Time.toString(), cursor.getColumnName(2))
+        assertEquals( User.Ext.toString(), cursor.getColumnName(4))
+      }
+  }
+
 //  @Test
 //  fun queryKeyword() {
 //    val table = User.TableNameIn(db)
@@ -71,16 +90,6 @@ class ExampleInstrumentedTest {
 //      assertEquals( 232323, user.Time)
 //      assertEquals( 4, user.Add.toInt())
 //    }
-//  }
-
-//  @Test
-//  fun deleteColumn() {
-//    val table = User.TableNameIn(db)
-//    //
-//    val value = ContentValues(5)
-//    value.put(User.Id.toString(), "testDeleteColumn")
-//    value.put(User.Time.toString(), )
-//    db.UnderlyingDB.insertWithOnConflict(table, null, value.escape(), CONFLICT_REPLACE)
 //  }
 
   @Test
@@ -126,6 +135,21 @@ class ExampleInstrumentedTest {
 
     assertEquals(ret, "0xwew3")
   }
+}
+
+// only for test delete column
+@Table("user-only-for-testing-deleting")
+class UserDelete {
+  companion object
+
+  @Column("id", primaryKey = PrimaryKey.ONLY_ONE)
+  var Id: String = "0xwew3"
+  @Column("name")
+  var Name: String = "xp"
+
+  // add  是一个数据库的关键字，此项测试关键字作为列名是否正确
+  @Column("add")
+  var Add: Short = 4
 }
 
 @Table("user")
