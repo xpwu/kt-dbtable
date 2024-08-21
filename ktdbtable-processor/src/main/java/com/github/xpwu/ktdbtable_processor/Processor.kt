@@ -452,7 +452,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
           }
           db.SetVersion(tableName, tableVersion)
           for (init in ${tableClass}.Initializer()) {
-            it.Replace(tableName, init.ToContentValues())
+            it.Replace(tableName, init.ToContentValues().escape())
           }
           it.SetTransactionSuccessful()
         } finally {
