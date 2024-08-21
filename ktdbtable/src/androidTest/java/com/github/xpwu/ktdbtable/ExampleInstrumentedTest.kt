@@ -35,9 +35,11 @@ class ExampleInstrumentedTest {
     val name = User.TableNameIn(db)
     val cursor = db.UnderlyingDB.query(name, null, "${User.Id}=?", arrayOf("0xwew3"), null, null, null)
     while (cursor.moveToNext()) {
-      assertEquals( cursor.getString(0), "0xwew3")
-      assertEquals( cursor.getString(1), "xp")
-      assertEquals( cursor.getInt(2), 232323)
+      assertEquals( "0xwew3", cursor.getString(0))
+      assertEquals( "xp", cursor.getString(1))
+      assertEquals( 232323, cursor.getInt(2))
+      assertEquals( 4, cursor.getShort(3).toInt())
+      assertEquals( "add", cursor.getColumnName(3))
     }
   }
 
@@ -99,8 +101,12 @@ class User {
   @Index(unique = true)
   var Time: Int = 232323
 
+  // add  是一个数据库的关键字，此项测试关键字作为列名是否正确
   @Column("add")
-  var Add: ByteArray = ByteArray(0)
+  var Add: Short = 4
+
+  @Column("ext")
+  var Ext: ByteArray = ByteArray(0)
 }
 
 fun NewUser(id: String, name: String, time: Int): User {
