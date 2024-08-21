@@ -6,10 +6,6 @@ interface Where {
   val BindArgs: Array<String>
 }
 
-fun String.escape(): String {
-  return this.replace("'", "''")
-}
-
 val Where.RawSQL: String
   get() {
     val bind = this.BindArgs.map { "'" + (it.escape()) + "'" }
