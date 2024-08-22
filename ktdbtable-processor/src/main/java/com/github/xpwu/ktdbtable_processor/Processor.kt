@@ -407,6 +407,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
     import android.database.Cursor
     import com.github.xpwu.ktdbtable.*
     
+    // return origin string, writing at the '@Table', not including " `` "
     fun ${tableClass}.Companion.TableNameIn(db: com.github.xpwu.ktdbtable.DB<*>): String {
       val name = db.Name(${tableClass}::class) ?: tableName
 
@@ -452,7 +453,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
           }
           db.SetVersion(tableName, tableVersion)
           for (init in ${tableClass}.Initializer()) {
-            it.Replace(tableName, init.ToContentValues())
+            it.Replace(tableName.notSqlKeyword(), init.ToContentValues())
           }
           it.SetTransactionSuccessful()
         } finally {
