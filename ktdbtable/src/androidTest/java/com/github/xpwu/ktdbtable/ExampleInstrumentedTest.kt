@@ -1,6 +1,7 @@
 package com.github.xpwu.ktdbtable
 
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.github.xpwu.ktdbtble.annotation.Column
@@ -61,20 +62,62 @@ class ExampleInstrumentedTest {
   @Test
   fun deleteColumn() {
     val table = User.TableNameIn(db)
-      val where = User.Id.eq("0xwew3")
-      val cursor = db.UnderlyingDB.query(table, where)
-      while (cursor.moveToNext()) {
-        val user = UserDelete()
-        cursor.ToUserDelete(user)
-        assertEquals( "0xwew3", user.Id)
-        assertEquals( "xp", user.Name)
-        assertEquals( 4, user.Add.toInt())
+    val where = User.Id.eq("0xwew3")
+    val cursor = db.UnderlyingDB.query(table, where)
+    while (cursor.moveToNext()) {
+      val user = UserDelete()
+      cursor.ToUserDelete(user)
+      assertEquals( "0xwew3", user.Id)
+      assertEquals( "xp", user.Name)
+      assertEquals( 4, user.Add.toInt())
 
-        // deleted column for UserDelete
-        assertEquals( 232323, cursor.getInt(2))
-        assertEquals( User.Time.toString(), cursor.getColumnName(2))
-        assertEquals( User.Ext.toString(), cursor.getColumnName(4))
-      }
+      // deleted column for UserDelete
+      assertEquals( 232323, cursor.getInt(2))
+      assertEquals( User.Time.toString(), cursor.getColumnName(2))
+      assertEquals( User.Ext.toString(), cursor.getColumnName(4))
+    }
+  }
+
+  @Test
+  fun selectColumns() {
+    val table = User.TableNameIn(db)
+    val where = User.Id.eq("0xwew3")
+    val cursor = db.UnderlyingDB.query(table, arrayOf(User.Id, User.Time), where)
+    cursor.moveToFirst()
+    val user = User()
+    val has = cursor.ToUser(user)
+
+    assertEquals( "0xwew3", user.Id)
+    assertEquals( 232323, user.Time)
+
+    assertEquals(true, has.Id)
+    assertEquals(true, has.Time)
+    assertEquals(false, has.Name)
+    assertEquals(false, has.Add)
+    assertEquals(false, has.Ext)
+  }
+
+  @Test
+  fun insert() {
+    val table = User.TableNameIn(db)
+    val user = NewUser("inse-id", "ins", 5)
+    db.UnderlyingDB.insertWithOnConflict(table, null, user.ToContentValues(
+      listOf( User.Id, User.Name, User.Time)), CONFLICT_REPLACE)
+
+    val cursor = db.UnderlyingDB.query(table,User.Id eq "inse-id")
+    cursor.moveToFirst()
+    val user2 = User()
+    val has = cursor.ToUser(user2)
+
+    assertEquals( "inse-id", user.Id)
+    assertEquals("ins", user.Name)
+    assertEquals( 5, user.Time)
+
+    assertEquals(true, has.Id)
+    assertEquals(true, has.Time)
+    assertEquals(true, has.Name)
+    assertEquals(false, has.Add)
+    assertEquals(false, has.Ext)
   }
 
 //  @Test
