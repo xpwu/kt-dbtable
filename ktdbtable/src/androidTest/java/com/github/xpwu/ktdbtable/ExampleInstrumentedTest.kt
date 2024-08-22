@@ -120,20 +120,51 @@ class ExampleInstrumentedTest {
     assertEquals(false, has.Ext)
   }
 
-//  @Test
-//  fun queryKeyword() {
-//    val table = User.TableNameIn(db)
-//    val where = User.Add.eq(4)
-//    val cursor = db.UnderlyingDB.query(table, where)
-//    while (cursor.moveToNext()) {
-//      val user = User()
-//      cursor.ToUser(user)
-//      assertEquals( "0xwew3", user.Id)
-//      assertEquals( "xp", user.Name)
-//      assertEquals( 232323, user.Time)
-//      assertEquals( 4, user.Add.toInt())
-//    }
-//  }
+  @Test
+  fun queryKeyword() {
+    val table = User.TableNameIn(db)
+    val where = User.Add.eq(4)
+    val cursor = db.UnderlyingDB.query(table, where)
+    while (cursor.moveToNext()) {
+      val user = User()
+      cursor.ToUser(user)
+      assertEquals( 4, user.Add.toInt())
+    }
+  }
+
+  @Test
+  fun queryWhere() {
+    val table = User.TableNameIn(db)
+    var cursor = db.UnderlyingDB.query(table, User.Add eq 4)
+    while (cursor.moveToNext()) {
+      val user = User()
+      cursor.ToUser(user)
+      assertEquals( 4, user.Add.toInt())
+    }
+
+    cursor = db.UnderlyingDB.query(table, User.Add gte 3)
+    while (cursor.moveToNext()) {
+      val user = User()
+      cursor.ToUser(user)
+      assertEquals( 4, user.Add.toInt())
+    }
+
+    cursor = db.UnderlyingDB.query(table, User.Add btw Pair(3, 5))
+    while (cursor.moveToNext()) {
+      val user = User()
+      cursor.ToUser(user)
+      assertEquals( 4, user.Add.toInt())
+    }
+
+    cursor = db.UnderlyingDB.query(table, User.Id `in` arrayOf("0x111", "0xwew3"))
+    val user = User()
+    cursor.moveToNext()
+    cursor.ToUser(user)
+    assertEquals( "0x111", user.Id)
+    cursor.moveToNext()
+    cursor.ToUser(user)
+    assertEquals( "0xwew3", user.Id)
+  }
 
   @Test
   fun coroutine() = runBlocking {
