@@ -209,6 +209,17 @@ class ExampleInstrumentedTest {
 
     assertEquals(ret, "0xwew3")
   }
+
+  @Test
+  fun tableNameKeyword() {
+    val table = Adder.TableNameIn(db)
+    val cursor = db.UnderlyingDB.query(table.notSqlKeyword(), Adder.Id eq "0x111")
+    while (cursor.moveToNext()) {
+      val a = Adder()
+      cursor.ToAdder(a)
+      assertEquals( 4, a.Add.toInt())
+    }
+  }
 }
 
 
