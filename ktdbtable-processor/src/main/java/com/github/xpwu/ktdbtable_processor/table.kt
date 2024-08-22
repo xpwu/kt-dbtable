@@ -154,7 +154,7 @@ fun TableInfo.toContentValuesFun(): String {
   for (c in this.Columns) {
     val f = toByteArray[c.DataType.toString()]?:""
     builder.append("""
-      ${tableClass}.${c.FieldName}.toString() -> cv.put(column.toString(), ${if (c.NotPrimaryType) "$f(" else ""}this.${c.FieldName}${if (c.NotPrimaryType) ")" else ""})
+      ${tableClass}.${c.FieldName}.toString() -> cv.put("`${'$'}column`", ${if (c.NotPrimaryType) "$f(" else ""}this.${c.FieldName}${if (c.NotPrimaryType) ")" else ""})
     """.trimIndent()).append("\n")
   }
 

@@ -14,7 +14,7 @@ class Between private constructor(field: String, left: Any, right: Any) : Where 
     bindArgs = arrayOf(left, right)
   }
 
-  override val ArgSQL: String = "$field BETWEEN $left AND $right"
+  override val ArgSQL: String = "`$field` BETWEEN $left AND $right"
 
   private var bindArgs = emptyArray<String>()
 

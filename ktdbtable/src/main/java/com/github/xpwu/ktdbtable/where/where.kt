@@ -1,7 +1,5 @@
 package com.github.xpwu.ktdbtable.where
 
-import com.github.xpwu.ktdbtable.escape
-
 
 interface Where {
   val ArgSQL: String

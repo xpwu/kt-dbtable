@@ -13,7 +13,7 @@ class In private constructor( field: String, argSqlValue: String) : Where {
 
   private var bindArgs = emptyArray<String>()
 
-  override val ArgSQL: String = "$field IN $argSqlValue"
+  override val ArgSQL: String = "`$field` IN $argSqlValue"
 
   override val BindArgs: Array<String>
     get() = bindArgs

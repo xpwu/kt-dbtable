@@ -50,7 +50,7 @@ class Compare private constructor(field: String, op: op, value: Any) : Where {
 
   private var bindArgs = emptyArray<String>()
 
-  override val ArgSQL: String = field + op.value + value.toString()
+  override val ArgSQL: String = "`$field` ${op.value} $value"
 
   override val BindArgs: Array<String>
     get() = bindArgs
