@@ -14,6 +14,12 @@ class User {
   var Id: String? = null
   @Column("name", primaryKey = PrimaryKey.MULTI_DESC)
   var Name: String = "xp"
+
+  @Column("add")
+  var Add: Short = 4
+
+  @Column("ext")
+  var Ext: ByteArray = ByteArray(0)
 }
 
 fun User.Companion.Initializer(): Collection<User> {
