@@ -11,19 +11,13 @@ java {
 	targetCompatibility = JavaVersion.VERSION_11
 }
 
-dependencies {
-	implementation project(path: ':ktdbtable-annotation')
-	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+kotlin {
+	jvmToolchain(11)
 }
 
-compileKotlin {
-	kotlinOptions {
-		jvmTarget = "11"
-	}
+dependencies {
+	implementation project(path: ':ktdbtable-annotation')
+	implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
-compileTestKotlin {
-	kotlinOptions {
-		jvmTarget = "11"
-	}
-}
+
 
