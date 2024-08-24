@@ -6,7 +6,7 @@ plugins {
 
 android {
 	namespace 'com.github.xpwu.ktdbtable'
-	compileSdk 33
+	compileSdk 34
 
 	defaultConfig {
 		applicationId "com.github.xpwu.ktdbtable"
