@@ -46,3 +46,17 @@ dependencies {
 	androidTestImplementation 'androidx.test.ext:junit:1.2.1'
 	androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }
+
+publishing {
+	publications {
+		ktdbtable(MavenPublication) {
+			groupId project.group
+			artifactId project.name
+			version project.version
+
+			afterEvaluate {
+				from components.release
+			}
+		}
+	}
+}

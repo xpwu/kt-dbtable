@@ -20,4 +20,16 @@ dependencies {
 	implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
+publishing {
+	publications {
+		processor(MavenPublication) {
+			groupId project.group
+			artifactId project.name
+			version project.version
+
+			from components.kotlin
+		}
+	}
+}
+
 
