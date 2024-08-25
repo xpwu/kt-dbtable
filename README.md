@@ -20,12 +20,13 @@ dependencies {
 ## 1、基本使用  
 1、创建一个DB实例，首先使用底层的数据库实现DBer接口(同时实现DBInner与UnderlyingDBer接口)，然后使用DB的构造
 函数创建即可。在ktdbtable中已经实现了 SQLiteDatabase 与 SupportSQLiteDatabase 的 adapter (满足DBer接口)，
-如果使用的 其他数据库接口，可参照写一个adapter即可；   
-2、用 @Table @Column @Index 注解对表做注解处理，只支持kotlin，不支持java，
-类中必须声明companion object，参见testcase中的使用；   
-3、编译后，会生成新的方法，主要有 TableNameIn(db)、各个列的名称；   
-4、在所有数据库的操作中，使用 TableNameIn(db) 方法获取表名即可；   
-5、通过DB实例的UnderlyingDB属性获取到底层数据库对象，调用相关方法操作数据库即可。   
+如果使用的其他数据库接口，可参照写一个adapter即可；   
+2、用 @Table @Column @Index 注解对表做注解处理，只支持kotlin，不支持java，具体使用说明参见[注释](ktdbtable-annotation%2Fsrc%2Fmain%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtble%2Fannotation%2Fannotation.kt)。
+类中必须声明companion object，参见[testcase](ktdbtable%2Fsrc%2Ftest%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtable%2Fuser.kt) 中的使用；   
+3、编译后，会生成新的方法，主要有 asTable()、各个列的名称；   
+4、在所有数据库的操作中，使用 asTable() 方法获取表名即可；   
+5、通过DB实例的UnderlyingDB属性获取到底层数据库对象，调用相关方法操作数据库即可。  
+6、也可在上层封装更方便的接口，例如[sqliteadapter](ktdbtable%2Fsrc%2Fmain%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtable%2Fsqliteadapter.kt)中的query方法
 
 ## 2、升级   
 1、添加列：直接在代码中添加属性即可  
@@ -63,4 +64,11 @@ ktdbtable不影响原有的升级
 
 ## 6、队列，协程接口
 使用DBQueue 而不直接使用 DB 即可使用队列串行执行数据库操作，异步的返回使用协程方式。
+
+## 7、表的创建/升级    
+在首次使用表时，自动创建/升级。如果需要在生成DB后就创建/升级，可以在DB构造时传入 tablesBinding 参数。    
+
+## 8、其它类型   
+sqlite 不支持的类型会转化为 ByteArray 数据存储，需要编写该类型与ByteArray之间的转化函数，并用 @FromByteArray
+与 @ToByteArray 注解。[示例](ktdbtable%2Fsrc%2Ftest%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtable%2Ffromtobytearray.kt)
 
