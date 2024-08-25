@@ -12,7 +12,7 @@ interface Table {
   companion object
 }
 
-fun Table.Companion.CreateTableIn(table: KClass<*>, db: DB<*>) {
+fun CreateTableIn(table: KClass<*>, db: DB<*>) {
   val eFuncs = table.companionObject?.declaredMemberExtensionFunctions ?: return
   for (func in eFuncs) {
     // extension and para db
@@ -69,13 +69,13 @@ private val allTables = lazy {
   (kClass?.createInstance() as? TableContainer)?.AllTables
 }
 
-fun Table.Companion.GetInfo(name: String): TableInfo? {
+fun GetTableInfo(name: String): TableInfo? {
   return allTables.value?.get(name)
 }
 
 // todo check path at compile
-fun Table.Companion.GetMigrations(name: String, from: Int, to: Int): List<Migration>? {
-  return FineBestMigratorPath(from, to, Table.GetInfo(name)?.Migrators)
+fun GetTableMigrations(name: String, from: Int, to: Int): List<Migration>? {
+  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrators)
 }
 
 private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCompat<Migration>> {

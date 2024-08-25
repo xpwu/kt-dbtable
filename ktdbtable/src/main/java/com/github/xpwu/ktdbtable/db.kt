@@ -58,7 +58,7 @@ class DB<T>(internal val dber: DBer<T>, tablesBinding: List<TableBinding> = empt
 
     for (table in tablesBinding) {
       if (!this.Exist(table.second)) {
-        Table.CreateTableIn(table.first, this)
+        CreateTableIn(table.first, this)
       } else {
         this.OnOpenAndUpgrade(table.second, table.first)
       }
@@ -344,11 +344,11 @@ fun DB<*>.OnOpenAndUpgrade(tableA: String, kclazz: KClass<*>) {
   // 2、对比所有的version  找出 migrator
   val oldVersion = this.OldVersion(name)
   val allMigrations = emptyList<MInfo>().toMutableList()
-  val nowV = Table.GetInfo(infoName)?.Version?:return
+  val nowV = GetTableInfo(infoName)?.Version?:return
   // 能找到的 都是opened
   this.opened.add(name)
   if (nowV == oldVersion) return
-  val res = Table.GetMigrations(infoName, oldVersion, nowV)
+  val res = GetTableMigrations(infoName, oldVersion, nowV)
     ?: throw SQLException("can NOT migrate table(${name}) from ${oldVersion} to $nowV")
   allMigrations += MInfo(res, name, oldVersion, nowV)
 
@@ -367,7 +367,7 @@ fun DB<*>.OnOpenAndUpgrade(tableA: String, kclazz: KClass<*>) {
   // 4、对比出所有需要增加的索引
   val allAddIndexes = emptyList<String>().toMutableList()
   val oldIndexNames = this.AllIndexes().toSet()
-  val nowIndexes = Table.GetInfo(infoName)?.Indexes ?: emptyMap()
+  val nowIndexes = GetTableInfo(infoName)?.Indexes ?: emptyMap()
   val needAdders2 = nowIndexes - oldIndexNames
   for ((_, adder) in needAdders2) {
     allAddIndexes += adder
@@ -392,7 +392,7 @@ fun DB<*>.OnOpenAndUpgrade(tableA: String, kclazz: KClass<*>) {
     // 7-1、对比出所有需要补充的字段
     val allAlterSQLs = emptyList<String>().toMutableList()
     val oldColumns = this.TableColumnNames(name)
-    val nowColumns = Table.GetInfo(infoName)?.Columns ?: emptyMap()
+    val nowColumns = GetTableInfo(infoName)?.Columns ?: emptyMap()
     val needAdders = nowColumns - oldColumns.toSet()
     for ((_, adder) in needAdders) {
       allAlterSQLs += adder
@@ -431,10 +431,10 @@ private fun DB<*>.OnOpen(): Int {
   this.opened.addAll(allTables)
 
   for (i in 0 until allTables.size) {
-    val nowV = Table.GetInfo(this.unBinding(allTables[i]))?.Version ?: continue
+    val nowV = GetTableInfo(this.unBinding(allTables[i]))?.Version ?: continue
 
     if (nowV == oldVersions[i]) continue
-    val res = Table.GetMigrations(this.unBinding(allTables[i]), oldVersions[i], nowV)
+    val res = GetTableMigrations(this.unBinding(allTables[i]), oldVersions[i], nowV)
       ?: throw SQLException("can NOT migrate table(${allTables[i]}) from ${oldVersions[i]} to $nowV")
     allMigrations += MInfo(res, allTables[i], oldVersions[i], nowV)
   }
@@ -442,7 +442,7 @@ private fun DB<*>.OnOpen(): Int {
   val allAlterSQLs = emptyList<String>().toMutableList()
   for (table in allTables) {
     val oldColumns = this.TableColumnNames(table)
-    val nowColumns = Table.GetInfo(this.unBinding(table))?.Columns ?: emptyMap()
+    val nowColumns = GetTableInfo(this.unBinding(table))?.Columns ?: emptyMap()
     val needAdders = nowColumns - oldColumns.toSet()
     for ((_, adder) in needAdders) {
       allAlterSQLs += adder
@@ -452,7 +452,7 @@ private fun DB<*>.OnOpen(): Int {
   val allAddIndexes = emptyList<String>().toMutableList()
   val oldIndexNames = this.AllIndexes().toSet()
   for (table in allTables) {
-    val nowIndexes = Table.GetInfo(this.unBinding(table))?.Indexes ?: emptyMap()
+    val nowIndexes = GetTableInfo(this.unBinding(table))?.Indexes ?: emptyMap()
     val needAdders = nowIndexes - oldIndexNames
     for ((_, adder) in needAdders) {
       allAddIndexes += adder
@@ -493,7 +493,7 @@ private fun DB<*>.OnUpgrade(onProgress: (Int) -> Unit = {}) {
     val allAlterSQLs = emptyList<String>().toMutableList()
     for (table in this.uContext.allTables) {
       val oldColumns = this.TableColumnNames(table)
-      val nowColumns = Table.GetInfo(this.unBinding(table))?.Columns ?: emptyMap()
+      val nowColumns = GetTableInfo(this.unBinding(table))?.Columns ?: emptyMap()
       val needAdders = nowColumns - oldColumns.toSet()
       for ((_, adder) in needAdders) {
         allAlterSQLs += adder
