@@ -407,8 +407,12 @@ fun Processor.outATable(tableInfo: TableInfo) {
     import android.database.Cursor
     import com.github.xpwu.ktdbtable.*
     
-    // return origin string, writing at the '@Table', not including " `` "
+    @Deprecated("", replaceWith = ReplaceWith("asTable().OriginNameIn"))
     fun ${tableClass}.Companion.TableNameIn(db: com.github.xpwu.ktdbtable.DB<*>): String {
+      return ${tableClass}.CreateTableAndReturnNameIn(db)
+    }
+    
+    private fun ${tableClass}.Companion.CreateTableAndReturnNameIn(db: com.github.xpwu.ktdbtable.DB<*>): String {
       val name = db.Name(${tableClass}::class) ?: tableName
 
       if (!db.Exist(name)) {
@@ -418,6 +422,14 @@ fun Processor.outATable(tableInfo: TableInfo) {
       }
 
       return name
+    }
+    
+    fun ${tableClass}.Companion.asTable(): Table {
+      return object : Table {
+        override fun OriginNameIn(db: DB<*>): String {
+          return ${tableClass}.CreateTableAndReturnNameIn(db)
+        }
+      }
     }
     
     ${columns.toString().align("    ")}
@@ -453,7 +465,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
           }
           db.SetVersion(tableName, tableVersion)
           for (init in ${tableClass}.Initializer()) {
-            it.Replace(tableName.notSqlKeyword(), init.ToContentValues())
+            it.Replace(tableName.noSqlKeyword(), init.ToContentValues())
           }
           it.SetTransactionSuccessful()
         } finally {

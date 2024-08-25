@@ -33,7 +33,7 @@ class ExampleInstrumentedTest {
 
   @Test
   fun sqlite() {
-    val name = User.TableNameIn(db)
+    val name = User.asTable().SqlNameIn(db)
     val cursor = db.UnderlyingDB.query(name, null, "${User.Id}=?", arrayOf("0xwew3"), null, null, null)
     while (cursor.moveToNext()) {
       assertEquals( "0xwew3", cursor.getString(0))
@@ -46,9 +46,8 @@ class ExampleInstrumentedTest {
 
   @Test
   fun query() {
-    val table = User.TableNameIn(db)
     val where = User.Id.eq("0xwew3")
-    val cursor = db.UnderlyingDB.query(table, where)
+    val cursor = db.query(User.asTable(), where)
     while (cursor.moveToNext()) {
       val user = User()
       cursor.ToUser(user)
@@ -61,9 +60,8 @@ class ExampleInstrumentedTest {
 
   @Test
   fun deleteColumn() {
-    val table = User.TableNameIn(db)
     val where = User.Id.eq("0xwew3")
-    val cursor = db.UnderlyingDB.query(table, where)
+    val cursor = db.query(User.asTable(), where)
     while (cursor.moveToNext()) {
       val user = UserDelete()
       cursor.ToUserDelete(user)
@@ -80,9 +78,8 @@ class ExampleInstrumentedTest {
 
   @Test
   fun selectColumns() {
-    val table = User.TableNameIn(db)
     val where = User.Id.eq("0xwew3")
-    val cursor = db.UnderlyingDB.query(table, arrayOf(User.Id, User.Time), where)
+    val cursor = db.query(User.asTable(), arrayOf(User.Id, User.Time), where)
     cursor.moveToFirst()
     val user = User()
     val has = cursor.ToUser(user)
@@ -99,12 +96,12 @@ class ExampleInstrumentedTest {
 
   @Test
   fun insert() {
-    val table = User.TableNameIn(db)
+    val table = User.asTable()
     val user = NewUser("inse-id", "ins", 5)
-    db.UnderlyingDB.insertWithOnConflict(table, null, user.ToContentValues(
+    db.UnderlyingDB.insertWithOnConflict(table.SqlNameIn(db), null, user.ToContentValues(
       listOf( User.Id, User.Name, User.Time)), CONFLICT_REPLACE)
 
-    val cursor = db.UnderlyingDB.query(table,User.Id eq "inse-id")
+    val cursor = db.query(table,User.Id eq "inse-id")
     cursor.moveToFirst()
     val user2 = User()
     val has = cursor.ToUser(user2)
@@ -122,9 +119,8 @@ class ExampleInstrumentedTest {
 
   @Test
   fun queryKeyword() {
-    val table = User.TableNameIn(db)
     val where = User.Add.eq(4)
-    val cursor = db.UnderlyingDB.query(table, where)
+    val cursor = db.query(User.asTable(), where)
     while (cursor.moveToNext()) {
       val user = User()
       cursor.ToUser(user)
@@ -134,29 +130,29 @@ class ExampleInstrumentedTest {
 
   @Test
   fun queryWhere() {
-    val table = User.TableNameIn(db)
-    var cursor = db.UnderlyingDB.query(table, User.Add eq 4)
+    val table = User.asTable()
+    var cursor = db.query(table, User.Add eq 4)
     while (cursor.moveToNext()) {
       val user = User()
       cursor.ToUser(user)
       assertEquals( 4, user.Add.toInt())
     }
 
-    cursor = db.UnderlyingDB.query(table, User.Add gte 3)
+    cursor = db.query(table, User.Add gte 3)
     while (cursor.moveToNext()) {
       val user = User()
       cursor.ToUser(user)
       assertEquals( 4, user.Add.toInt())
     }
 
-    cursor = db.UnderlyingDB.query(table, User.Add btw Pair(3, 5))
+    cursor = db.query(table, User.Add btw Pair(3, 5))
     while (cursor.moveToNext()) {
       val user = User()
       cursor.ToUser(user)
       assertEquals( 4, user.Add.toInt())
     }
 
-    cursor = db.UnderlyingDB.query(table, User.Id `in` arrayOf("0x111", "0xwew3"))
+    cursor = db.query(table, User.Id `in` arrayOf("0x111", "0xwew3"))
     val user = User()
     cursor.moveToNext()
     cursor.ToUser(user)
@@ -173,7 +169,7 @@ class ExampleInstrumentedTest {
     }
 
     val ret: String = dbQueue {
-      val name = User.TableNameIn(it)
+      val name = User.asTable().SqlNameIn(it)
       val cursor = it.UnderlyingDB.query(name, null, "${User.Id}=?", arrayOf("0xwew3"), null, null, null)
       var r = ""
       while (cursor.moveToNext()) {
@@ -195,7 +191,7 @@ class ExampleInstrumentedTest {
 
     val ret: String = dbQueue {
       dbQueue {
-        val name = User.TableNameIn(it)
+        val name = User.asTable().SqlNameIn(it)
         val cursor = it.UnderlyingDB.query(name, null, "${User.Id}=?", arrayOf("0xwew3"), null, null, null)
         var r = ""
         while (cursor.moveToNext()) {
@@ -212,8 +208,7 @@ class ExampleInstrumentedTest {
 
   @Test
   fun tableNameKeyword() {
-    val table = Adder.TableNameIn(db)
-    val cursor = db.UnderlyingDB.query(table.notSqlKeyword(), Adder.Id eq "0x111")
+    val cursor = db.query(Adder.asTable(), Adder.Id eq "0x111")
     while (cursor.moveToNext()) {
       val a = Adder()
       cursor.ToAdder(a)

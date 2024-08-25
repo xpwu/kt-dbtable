@@ -9,7 +9,11 @@ import kotlin.reflect.full.declaredMemberExtensionFunctions
 
 
 interface Table {
-  companion object
+  fun SqlNameIn(db: DB<*>): String {
+    return "`${OriginNameIn(db)}`"
+  }
+
+  fun OriginNameIn(db: DB<*>): String
 }
 
 fun CreateTableIn(table: KClass<*>, db: DB<*>) {

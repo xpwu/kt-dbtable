@@ -1,6 +1,6 @@
 package com.github.xpwu.ktdbtable
 
-fun String.notSqlKeyword(): String {
+fun String.noSqlKeyword(): String {
   return "`${this}`"
 }
 
