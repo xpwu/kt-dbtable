@@ -3,15 +3,32 @@
 解除库与表的耦合度；表可以自己维护自己的升级；表自动升级；使用原有的数据库接口；协程接口
 
 ## 0、代码库的引用
-1、jitpack目前编译有问题，暂未发布为依赖包，暂时直接在代码中导入module的方式使用   
-2、build.grable加入 
+1、可以使用 jitpack 直接依赖 github 代码   
+2、在 root build.grable 加入 
 ```
-apply plugin: 'kotlin-kapt'
+allprojects {
+	repositories {
+		google()
+		mavenCentral()
+		// 在依赖库列表的最后加入jit依赖库
+		maven { url 'https://jitpack.io' }
+	}
+}
+```
+3、在 module build.grable 加入
+```
+plugins {
+	id 'com.android.library'
+	id 'org.jetbrains.kotlin.android'
+	// 加入kapt插件
+	id 'kotlin-kapt'
+}
 
 
 dependencies {
-  implementation project(path: ':ktdbtable')
-  kapt project(path: ':ktdbtable-processor')
+  // 加入如下两行的依赖
+  implementation 'com.github.xpwu.kt-dbtable:ktdbtable:1.0.0'
+  kapt 'com.github.xpwu.kt-dbtable:ktdbtable-processor:1.0.0'
 }
 
 ```
