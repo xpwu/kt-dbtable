@@ -43,21 +43,3 @@ fun DB<SQLiteDatabase>.query(table: Table, columns: Array<ColumnInfo>, where: Wh
   return this.UnderlyingDB.query(table.SqlNameIn(this), cls, where.ArgSQL
     , where.BindArgs, null, null, null)
 }
-
-//fun SQLiteDatabase.query(tableName: String, columns: Array<ColumnInfo>, where: Where): Cursor {
-//  val cls = Array(columns.size) { index: Int -> columns[index].toString() }
-//
-//  return this.query(tableName, cls, where.ArgSQL, where.BindArgs, null, null, null)
-//}
-//
-//fun SQLiteDatabase.query(tableName: String, where: Where): Cursor {
-//  return this.query(tableName, null, where.ArgSQL, where.BindArgs, null, null, null)
-//}
-
-//val sqlite = SQLiteDatabase.openOrCreateDatabase("", null)
-//
-//val db = DB(SQLiteAdapter(sqlite))
-//
-//fun a() {
-//  db.UnderlyingDB.path
-//}
