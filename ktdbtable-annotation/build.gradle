@@ -12,15 +12,15 @@ kotlin {
 	jvmToolchain(11)
 }
 
-publishing {
-	publications {
-		annotation(MavenPublication) {
-			groupId project.group
-			artifactId project.name
-			version project.version
-
-			from components.kotlin
-		}
-	}
-}
+//publishing {
+//	publications {
+//		annotation(MavenPublication) {
+//			groupId project.group
+//			artifactId project.name
+//			version project.version
+//
+//			from components.kotlin
+//		}
+//	}
+//}
 
