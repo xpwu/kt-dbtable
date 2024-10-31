@@ -311,6 +311,11 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
     return false
   }
 
+  if (tableInfo.Columns.size == 0) {
+    this.logger.error(table, "at least one 'column'")
+    return false
+  }
+
   this.outATable(tableInfo)
 
   return true
