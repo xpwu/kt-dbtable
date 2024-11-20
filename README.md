@@ -72,7 +72,7 @@ dependencies {
 1、库的所有操作都直接使用底层数据库的接口，所有必须要库升级时，按照原有升级策略实施就行，
 ktdbtable不影响原有的升级   
 2、如果希望ktdbtable的升级也有进度提示，可以在创建DB时，最后一个参数传入false，然后手动
-调用DB的Upgrade() 方法
+调用DB的Upgrade() 方法 --- 实验性功能，bug 修改中
 
 ## 5、表的初始化
 在建表的时候，如果需要指定初始插入的数据，可以实现 fun Xxx.Companion.Initializer(): Collection<Xxx>
