@@ -507,7 +507,8 @@ fun TableInfo.out(logger: Logger): String {
     fun ${tableClass}.Companion.TableInfo(): TableInfo {
       return TableInfo(tableVersion, ${tableClass}.Migrators(), 
         ${tableClass}.allIndex(), 
-        ${column.align("        ")}
+        ${column.align("        ")},
+        tableName
       )
     }
   """.trimIndent()

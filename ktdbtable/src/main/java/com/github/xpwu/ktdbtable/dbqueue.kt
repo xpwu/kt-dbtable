@@ -27,7 +27,7 @@ class DBQueue<T>(logName: String = "db",
   init {
     // consumer
     scope.launch {
-      val db = DB(init(), tablesBinding, upgrade)
+      val db = DB(init(), tablesBinding)
 
       withContext(dbCtx(db)) {
         while (isActive) {

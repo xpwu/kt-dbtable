@@ -28,7 +28,25 @@ fun CreateTableIn(table: KClass<*>, db: DB<*>) {
 }
 
 data class Version(val from: Int = 0, val to: Int = 0)
-typealias Migration = (DB<*>) -> Unit
+//typealias Migration = (DB<*>) -> Unit
+
+interface Migration {
+  fun Count(db: DB<*>): Int
+  fun Exe(db: DB<*>, progression: (Int)->Unit)
+}
+
+fun Migration(block: (DB<*>) -> Unit): Migration {
+  return object: Migration {
+    override fun Count(db: DB<*>): Int {
+      return 1
+    }
+
+    override fun Exe(db: DB<*>, progression: (Int) -> Unit) {
+      block(db)
+      progression(1)
+    }
+  }
+}
 
 typealias ColumnName = String
 // "ALTER TABLE table_name ADD COLUMN ..."
@@ -43,7 +61,29 @@ data class TableInfo (
   val Migrators: Map<Version, Migration> = emptyMap(),
   val Indexes: Map<IndexName, IndexSQL> = emptyMap(),
   val Columns: Map<ColumnName, AlterSQL> = emptyMap(),
+  val DefaultName: String = ""
 )
+
+/**
+ * 使用反射方式访问得原因：
+ * 1、如果使用生成一个数组的方式，在依赖库的情况下，processor 会对每个依赖库生成一个数组，无法满足通过名字/类名查找所有
+ *    Info的要求
+ * 2、库的新使用方式也不需要一个全集的 Info 对应关系，且全集的Info 也不能完全的对应好 name=>info
+ *
+ */
+fun GetTableInfo(table: KClass<*>): TableInfo {
+  // table 在编译时，processor 会检查 companionObject, 所以一定有 companionObject
+  val eFuncs = table.companionObject!!.declaredMemberExtensionFunctions
+  for (func in eFuncs) {
+    // extension func.
+    if (func.name == "TableInfo" && func.parameters.isEmpty()) {
+      return func.call(table.companionObjectInstance) as TableInfo
+    }
+  }
+
+  // processor 生成的TableInfo方法, 所以一定存在
+  throw Exception("TableInfo not be found! ktdbtable-processor may be error!")
+}
 
 /**
  *
@@ -62,25 +102,25 @@ data class TableInfo (
  *
  * 保持 kclass.qualifiedName => TableInfo 的映射是为了加快查找，而不用反射
  */
-open class TableContainer{
-  open val AllTables: Map<String, TableInfo> = mapOf()
-}
-
-private val allTables = lazy {
-  val kClass = TableContainer::class.qualifiedName
-    ?.let { Class.forName(it + "Impl").kotlin }
-
-  (kClass?.createInstance() as? TableContainer)?.AllTables
-}
-
-fun GetTableInfo(name: String): TableInfo? {
-  return allTables.value?.get(name)
-}
+//open class TableContainer{
+//  open val AllTables: Map<String, TableInfo> = mapOf()
+//}
+//
+//private val allTables = lazy {
+//  val kClass = TableContainer::class.qualifiedName
+//    ?.let { Class.forName(it + "Impl").kotlin }
+//
+//  (kClass?.createInstance() as? TableContainer)?.AllTables
+//}
+//
+//fun GetTableInfo(name: String): TableInfo? {
+//  return allTables.value?.get(name)
+//}
 
 // todo check path at compile
-fun GetTableMigrations(name: String, from: Int, to: Int): List<Migration>? {
-  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrators)
-}
+//fun GetTableMigrations(name: String, from: Int, to: Int): List<Migration>? {
+//  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrators)
+//}
 
 private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCompat<Migration>> {
   val migrations: SparseArrayCompat<SparseArrayCompat<Migration>> = SparseArrayCompat()
@@ -100,12 +140,10 @@ private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCo
   return migrations
 }
 
-fun FineBestMigratorPath(from: Int, to: Int, m: Map<Version, Migration>?): List<Migration>? {
+fun FineBestMigratorPath(from: Int, to: Int, m: Map<Version, Migration>): List<Migration> {
   if (from == to) {
     return emptyList()
   }
-
-  m ?: return null
 
   var start = from
   val migrations = convert(m)

@@ -121,7 +121,7 @@ class Processor : AbstractProcessor() {
       }
     """.trimIndent()
 
-    write(outDirectory, "com.github.xpwu.ktdbtable", "TableContainerImpl", tableContainer)
+//    write(outDirectory, "com.github.xpwu.ktdbtable", "TableContainerImpl", tableContainer)
     return true
   }
 }
@@ -423,7 +423,7 @@ fun Processor.outATable(tableInfo: TableInfo) {
       if (!db.Exist(name)) {
         ${tableClass}.CreateTableIn(db)
       } else {
-        db.OnOpenAndUpgrade(name, ${tableClass}::class)
+        db.OnOpenAndUpgrade(${tableClass}::class, ${tableClass}.TableInfo())
       }
 
       return name
