@@ -58,7 +58,7 @@ class Msg {
 
 fun Msg.Companion.Migrators(): Map<Version, Migration> {
   return mapOf(
-    Version(0, 2) to {
+    Version(0, 2) to Migration{
         db1 ->
       val db = db1.UnderlyingDB as? SQLiteDatabase
       db?.execSQL("")}
