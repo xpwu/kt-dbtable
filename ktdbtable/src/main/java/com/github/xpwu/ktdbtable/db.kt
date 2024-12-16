@@ -120,7 +120,7 @@ suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (Int) ->
     // table 还不存在的情况，也不用做 Migrate
     if (this.Exist(name) && table.second > oldV && table.second <= info.Version) {
       list.addAll(FineBestMigratorPath(oldV, info.Version, info.Migrators))
-      this.OnOpenAndUpgrade(table.first, info, false)
+      this.OpenAndUpgrade(table.first, info, false)
     }
   }
 
@@ -392,7 +392,11 @@ private fun DB<*>.unBinding(name: String): String {
   return this.name2binding[name]?.qualifiedName?:name
 }
 
-fun DB<*>.OnOpenAndUpgrade(tableClazz: KClass<*>, info: TableInfo, includeMigrations: Boolean = true) {
+fun DB<*>.Open(table: String) {
+  this.opened.add(table)
+}
+
+fun DB<*>.OpenAndUpgrade(tableClazz: KClass<*>, info: TableInfo, includeMigrations: Boolean = true) {
   // 1、name
   val name = this.Name(tableClazz)?:info.DefaultName
   if (this.opened.contains(name)) {

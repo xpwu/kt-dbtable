@@ -422,8 +422,9 @@ fun Processor.outATable(tableInfo: TableInfo) {
 
       if (!db.Exist(name)) {
         ${tableClass}.CreateTableIn(db)
+        db.Open(name)
       } else {
-        db.OnOpenAndUpgrade(${tableClass}::class, ${tableClass}.TableInfo())
+        db.OpenAndUpgrade(${tableClass}::class, ${tableClass}.TableInfo())
       }
 
       return name
