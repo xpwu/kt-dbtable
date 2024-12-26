@@ -2,6 +2,11 @@ package com.github.xpwu.ktdbtable
 
 import android.content.ContentValues
 import android.database.Cursor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.launch
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.reflect.KClass
 
@@ -124,23 +129,46 @@ suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (Int) ->
     }
   }
 
+  val ch = Channel<Int>(UNLIMITED)
   // find total
-  var count = 0
-  for (mig in list) {
-    count += mig.Count(this)
+  CoroutineScope(Dispatchers.IO).launch {
+    var count = 0
+    for (mig in list) {
+      count += mig.Count(this@Upgrade)
+    }
+    ch.send(count)
   }
-  total(count)
+  val totalV = ch.receive()
+  total(totalV)
 
   // exe
-  var done = 0
-  for (mig in list) {
-    var thisCnt = 0
-    mig.Exe(this) {
-      onProgress(done + it)
-      thisCnt = it
+  CoroutineScope(Dispatchers.IO).launch {
+    var done = 0
+    for (mig in list) {
+      var thisCnt = 0
+      mig.Exe(this@Upgrade) {
+        launch {
+          ch.send(done + it)
+        }
+        thisCnt = it
+      }
+      done += thisCnt
     }
-    done += thisCnt
   }
+
+  var last = 0
+  for (p in ch) {
+    // launch {ch.send} 并不能确定顺序性，但onProgress()回调的值必须递增
+    if (p > last) {
+      onProgress(p)
+      last = p
+    }
+
+    if (p >= totalV) {
+      break
+    }
+  }
+
 }
 
 class syncMutableSet<E> {
