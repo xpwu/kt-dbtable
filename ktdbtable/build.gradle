@@ -39,6 +39,7 @@ dependencies {
 	implementation 'androidx.sqlite:sqlite-ktx:2.4.0'
 	implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 	implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+	implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1"
 	implementation project(path: ':ktdbtable-annotation')
 	kaptTest project(path: ':ktdbtable-processor')
 	testImplementation 'junit:junit:4.13.2'
