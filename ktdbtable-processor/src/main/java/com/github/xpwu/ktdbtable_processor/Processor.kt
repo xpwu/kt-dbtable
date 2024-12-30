@@ -134,7 +134,10 @@ fun Processor.processFromTo(roundEnv: RoundEnvironment) {
 
     e as ExecutableElement
 
-    if (e.parameters.size != 1) {
+    // 'ByteArray' .asType().toString() maybe is
+    // @org.jetbrains.annotations.NotNull byte[] or @org.jetbrains.annotations.Nullable byte[]
+    if (e.parameters.size != 1
+      || e.parameters[0].asType().toTypeString() != ByteArray::class.java.canonicalName) {
       continue
     }
 
@@ -149,7 +152,10 @@ fun Processor.processFromTo(roundEnv: RoundEnvironment) {
 
     e as ExecutableElement
 
-    if (e.parameters.size != 1 || e.returnType.toString() != ByteArray::class.java.canonicalName) {
+    // 'ByteArray' .asType().toString() maybe is
+    // @org.jetbrains.annotations.NotNull byte[] or @org.jetbrains.annotations.Nullable byte[]
+    if (e.parameters.size != 1
+      || e.returnType.toTypeString() != ByteArray::class.java.canonicalName) {
       continue
     }
 
@@ -268,17 +274,19 @@ fun Processor.processATable(table: TypeElement, tables: MutableSet<TableInfo>): 
 
     val columnA = field.getAnnotation(Column::class.java) ?: continue
     var elseT = false
-    var ty = entity2column[field.asType().toString()]
+
+    val fieldTypeStr = field.asType().toTypeString()
+    var ty = entity2column[fieldTypeStr]
 
     if (ty == null
-        && fromByteArray[field.asType().toString()] != null
-        && toByteArray[field.asType().toString()] != null) {
+        && fromByteArray[fieldTypeStr] != null
+        && toByteArray[fieldTypeStr] != null) {
       ty = Type.BLOB
       elseT = true
     }
 
     if (ty == null) {
-      this.logger.error(e, printTypeError(e.asType().toString()))
+      this.logger.error(e, printTypeError(fieldTypeStr))
       return false
     }
 

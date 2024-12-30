@@ -152,7 +152,7 @@ fun TableInfo.toContentValuesFun(): String {
 
   val builder = StringBuilder()
   for (c in this.Columns) {
-    val f = toByteArray[c.DataType.toString()]?:""
+    val f = toByteArray[c.DataType.toTypeString()]?:""
     builder.append("""
       ${tableClass}.${c.FieldName}.toString() -> cv.put("`${'$'}column`", ${if (c.NotPrimaryType) "$f(" else ""}this.${c.FieldName}${if (c.NotPrimaryType) ")" else ""})
     """.trimIndent()).append("\n")
@@ -205,12 +205,12 @@ fun TableInfo.cursorToFun(): String {
   for (i in 0 until  this.Columns.size) {
     val c = this.Columns[i]
     val fieldName = c.FieldName
-    var funName = (getFun[c.DataType.toString()]?:{""})("i")
+    var funName = (getFun[c.DataType.toTypeString()]?:{""})("i")
     if (c.NotPrimaryType) {
       funName = "getBlob(i)"
     }
 
-    val f = fromByteArray[c.DataType.toString()]?:""
+    val f = fromByteArray[c.DataType.toTypeString()]?:""
 
     getBuilder.append("""
       ${tableClass}.${fieldName}.toString() -> { out.${fieldName} =  ${if (c.NotPrimaryType) "$f(" else ""}this.${funName}${if (c.NotPrimaryType) ")" else ""}; has[${i}] = true }
