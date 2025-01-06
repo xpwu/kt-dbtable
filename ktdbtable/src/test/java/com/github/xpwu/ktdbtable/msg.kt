@@ -66,13 +66,13 @@ fun Msg.Companion.Migrators(): Map<Version, Migration> {
 }
 
 fun Msg.Companion.Update(db: DB<SQLiteDatabase>) {
-  val name = Msg.TableNameIn(db)
+  val name = Msg.asTable().OriginNameIn(db)
   db.UnderlyingDB.update(name, Msg().ToContentValues(), "", null)
 }
 
 suspend fun Msg.Companion.Update(dbQueue: DBQueue<SQLiteDatabase>) {
   dbQueue {
-    val name = Msg.TableNameIn(it)
+    val name = Msg.asTable().OriginNameIn(it)
     it.UnderlyingDB.update(name, Msg().ToContentValues(), "", null)
   }
 }
