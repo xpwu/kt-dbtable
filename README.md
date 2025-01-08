@@ -41,16 +41,18 @@ dependencies {
 2、用 @Table @Column @Index 注解对表做注解处理，只支持kotlin，不支持java，具体使用说明参见[注释](ktdbtable-annotation%2Fsrc%2Fmain%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtble%2Fannotation%2Fannotation.kt)。
 类中必须声明companion object，参见[testcase](ktdbtable%2Fsrc%2Ftest%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtable%2Fuser.kt) 中的使用；   
 3、编译后，会生成新的方法，主要有 asTable()、各个列的名称；   
-4、在所有数据库的操作中，使用 asTable() 方法获取表名即可；   
+4、在所有数据库的操作中，使用 xxx.asTable().OriginNameIn(db) 
+(注：原始sql语句时，使用 xxx.asTable().SqlNameIn(db) ) 方法获取表名即可；   
 5、通过DB实例的UnderlyingDB属性获取到底层数据库对象，调用相关方法操作数据库即可。  
 6、也可在上层封装更方便的接口，例如[sqliteadapter](ktdbtable%2Fsrc%2Fmain%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtable%2Fsqliteadapter.kt)中的query方法
 
-## 2、升级   
+## <a name="upgrade"></a>2、升级   
 1、添加列：直接在代码中添加属性即可  
 2、删除列：表的代码里面删除属性即可   
 3、添加索引：直接用@Index指定新的索引即可   
 4、改列名：修改属性名而不修改真实字段名即可  
-5、创建新表：定义表的类，在使用此表的地方会自动创建，表名必须通过TableNameIn(db)获取   
+5、创建新表：定义表的类，在使用此表的地方会自动创建，表名必须通过 xxx.asTable().OriginNameIn(db) 
+(注：原始sql语句时，使用 xxx.asTable().SqlNameIn(db) )获取   
 6、其他复杂升级：在表的类代码中实现 fun xxx.Companion.Migrators(): Map<Version, Migration>
 同时在@Table中指定新的版本号  
 ### 注意：ALTER xxx ADD COLUMN xxx 有如下要求 [alter](https://www.sqlite.org/lang_altertable.html)
@@ -63,16 +65,14 @@ dependencies {
 
 
 ## 3、库与表的绑定  
-1、使用 xxx.TableNameIn(db) 方法时，会自动在db库中创建xxx表，并创建索引；   
+1、使用 xxx.asTable().OriginNameIn(db) (或者 xxx.asTable().SqlNameIn(db) ) 方法时，会自动在db库中创建xxx表，并创建索引；   
 2、表与库是完全分离的，一个表的定义可以在多个不同的库中绑定，如果同一个
-库中的表出现名字冲突，可以在创建DB的时候，直接绑定此表并指定此表在此库中的名字
+库中的表出现名字冲突，可以在创建DB的时候，直接通过 tablesBinding 参数绑定此表并指定此表在此库中的名字
 
 
-## 4、库的其他升级  
-1、库的所有操作都直接使用底层数据库的接口，所有必须要库升级时，按照原有升级策略实施就行，
-ktdbtable不影响原有的升级   
-2、如果希望ktdbtable的升级也有进度提示，可以在创建DB时，最后一个参数传入false，然后手动
-调用DB的Upgrade() 方法 --- 实验性功能，bug 修改中
+## 4、库的其他升级
+库的所有操作都直接使用底层数据库的接口，所有必须要进行库升级才能满足使用需求时，按照库原有升级策略实施就行，
+ktdbtable不影响原有的升级
 
 ## 5、表的初始化
 在建表的时候，如果需要指定初始插入的数据，可以实现 fun Xxx.Companion.Initializer(): Collection<Xxx>
@@ -83,7 +83,8 @@ ktdbtable不影响原有的升级
 使用DBQueue 而不直接使用 DB 即可使用队列串行执行数据库操作，异步的返回使用协程方式。
 
 ## 7、表的创建/升级    
-在首次使用表时，自动创建/升级。如果需要在生成DB后就创建/升级，可以在DB构造时传入 tablesBinding 参数。    
+[升级](#upgrade) 列出的所有升级(包括“复杂升级”)默认都是首次使用到此表时自动升级（在本次APP运行周期中），如果希望对某些表的某些版本手动升级，
+可以调用DB.Upgrade 方法，同时此方法可以得到升级的进度回调。   
 
 ## 8、其它类型   
 sqlite 不支持的类型会转化为 ByteArray 数据存储，需要编写该类型与ByteArray之间的转化函数，并用 @FromByteArray
