@@ -87,6 +87,8 @@ fun GetTableInfo(table: KClass<*>): TableInfo {
 
 /**
  *
+ *   此注释不删除的原因：对类名、表名等的解释仍有意义
+ *
  * 记录所有能从 name(table 的默认name) => TableInfo 的映射对 以及 kclass.qualifiedName => TableInfo 的映射对
  * 如果多个 TableInfo 对应同一个 name，不会用name收集在此处，而只是有 kclass.qualifiedName => TableInfo,
  * 并且这种情况不能算是错误，因为：虽然名字相同，但是不一定会在同一个db中，所以不能算错。
@@ -102,25 +104,7 @@ fun GetTableInfo(table: KClass<*>): TableInfo {
  *
  * 保持 kclass.qualifiedName => TableInfo 的映射是为了加快查找，而不用反射
  */
-//open class TableContainer{
-//  open val AllTables: Map<String, TableInfo> = mapOf()
-//}
-//
-//private val allTables = lazy {
-//  val kClass = TableContainer::class.qualifiedName
-//    ?.let { Class.forName(it + "Impl").kotlin }
-//
-//  (kClass?.createInstance() as? TableContainer)?.AllTables
-//}
-//
-//fun GetTableInfo(name: String): TableInfo? {
-//  return allTables.value?.get(name)
-//}
 
-// todo check path at compile
-//fun GetTableMigrations(name: String, from: Int, to: Int): List<Migration>? {
-//  return FineBestMigratorPath(from, to, GetTableInfo(name)?.Migrators)
-//}
 
 private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCompat<Migration>> {
   val migrations: SparseArrayCompat<SparseArrayCompat<Migration>> = SparseArrayCompat()
