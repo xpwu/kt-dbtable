@@ -115,6 +115,10 @@ fun UpTable(table: KClass<*>, ifLessVersion: Int): TableIfLessVersion = Pair(tab
 
 // total 只会被调用一次；onProgress 会被多次调用,最后一次调用返回的值为total返回的值
 // onProgress 调用结束后，Upgrade 函数才会运行结束
+// tables 中指定的 table 需要在满足以下条件时，才会被Upgrade执行升级，如果某张表不满足条件，后续在首次使用时，会自动升级(如果需要升级的话)
+//  1、table 已经在 db 中存在；
+//  2、table 在 db 中的历史版本号 小于 ifLessVersion；
+//  3、table 在代码中指定的版本号  大于或等于 ifLessVersion。
 suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (Int) -> Unit, total: (Int) -> Unit) {
   // 找出所有的需要升级的table
   val list = emptyList<Migration>().toMutableList()
@@ -124,7 +128,7 @@ suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (Int) ->
     val oldV = this.OldVersion(name)
     // table 还不存在的情况，也不用做 Migrate
     if (this.Exist(name) && table.second > oldV && table.second <= info.Version) {
-      list.addAll(FineBestMigratorPath(oldV, info.Version, info.Migrators))
+      list.addAll(FindBestMigratorPath(oldV, info.Version, info.Migrators))
       this.OpenAndUpgrade(table.first, info, false)
     }
   }
@@ -469,7 +473,7 @@ fun DB<*>.OpenAndUpgrade(tableClazz: KClass<*>, info: TableInfo, includeMigratio
       val nowV = info.Version
 
       if (nowV != oldVersion) {
-        val res = FineBestMigratorPath(oldVersion, nowV, info.Migrators)
+        val res = FindBestMigratorPath(oldVersion, nowV, info.Migrators)
         allMigrations += MInfo(res, name, oldVersion, nowV)
       }
       // 执行migrator

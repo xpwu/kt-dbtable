@@ -140,7 +140,7 @@ private fun convert(m: Map<Version, Migration>): SparseArrayCompat<SparseArrayCo
   return migrations
 }
 
-fun FineBestMigratorPath(from: Int, to: Int, m: Map<Version, Migration>): List<Migration> {
+fun FindBestMigratorPath(from: Int, to: Int, m: Map<Version, Migration>): List<Migration> {
   if (from == to) {
     return emptyList()
   }
