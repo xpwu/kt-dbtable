@@ -25,3 +25,4 @@ local.properties
 .idea
 .gradle
 /build
+app/src/main/java/com/github/xpwu/.DS_Store
