@@ -67,6 +67,6 @@ fun Msg.Companion.Migrators(): Map<Version, Migration> {
 }
 
 fun Msg.Companion.Update(db: DB<SQLiteDatabase>) {
-  val name = Msg.asTable().OriginNameIn(db)
+  val name = Msg.asTable().SqlNameIn(db)
   db.UnderlyingDB.update(name, Msg().ToContentValues(), "", null)
 }
