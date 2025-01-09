@@ -41,8 +41,8 @@ dependencies {
 2、用 @Table @Column @Index 注解对表做注解处理，只支持kotlin，不支持java，具体使用说明参见[注释](ktdbtable-annotation%2Fsrc%2Fmain%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtble%2Fannotation%2Fannotation.kt)。
 类中必须声明companion object，参见[testcase](ktdbtable%2Fsrc%2Ftest%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtable%2Fuser.kt) 中的使用；   
 3、编译后，会生成新的方法，主要有 asTable()、各个列的名称；   
-4、在所有数据库的操作中，使用 xxx.asTable().OriginNameIn(db) 
-(注：原始sql语句时，使用 xxx.asTable().SqlNameIn(db) ) 方法获取表名即可；   
+4、在所有数据库的操作中，使用 xxx.asTable().SqlNameIn(db) 方法获取表名即可
+(注：如需使用非转义表名，使用 xxx.asTable().OriginNameIn(db) ) ；   
 5、通过DB实例的UnderlyingDB属性获取到底层数据库对象，调用相关方法操作数据库即可。  
 6、也可在上层封装更方便的接口，例如[sqliteadapter](ktdbtable%2Fsrc%2Fmain%2Fjava%2Fcom%2Fgithub%2Fxpwu%2Fktdbtable%2Fsqliteadapter.kt)中的query方法
 
@@ -51,8 +51,8 @@ dependencies {
 2、删除列：表的代码里面删除属性即可   
 3、添加索引：直接用@Index指定新的索引即可   
 4、改列名：修改属性名而不修改真实字段名即可  
-5、创建新表：定义表的类，在使用此表的地方会自动创建，表名必须通过 xxx.asTable().OriginNameIn(db) 
-(注：原始sql语句时，使用 xxx.asTable().SqlNameIn(db) )获取   
+5、创建新表：定义表的类，在使用此表的地方会自动创建，表名必须通过 xxx.asTable().SqlNameIn(db)获取
+(注：如需使用非转义表名，使用 xxx.asTable().OriginNameIn(db) )。    
 6、其他复杂升级：在表的类代码中实现 fun xxx.Companion.Migrators(): Map<Version, Migration>
 同时在@Table中指定新的版本号  
 ### 注意：ALTER xxx ADD COLUMN xxx 有如下要求 [alter](https://www.sqlite.org/lang_altertable.html)
@@ -65,7 +65,7 @@ dependencies {
 
 
 ## 3、库与表的绑定  
-1、使用 xxx.asTable().OriginNameIn(db) (或者 xxx.asTable().SqlNameIn(db) ) 方法时，会自动在db库中创建xxx表，并创建索引；   
+1、使用 xxx.asTable().SqlNameIn(db) (或者 xxx.asTable().OriginNameIn(db) ) 方法时，会自动在db库中创建xxx表，并创建索引；   
 2、表与库是完全分离的，一个表的定义可以在多个不同的库中绑定，如果同一个
 库中的表出现名字冲突，可以在创建DB的时候，直接通过 tablesBinding 参数绑定此表并指定此表在此库中的名字
 
