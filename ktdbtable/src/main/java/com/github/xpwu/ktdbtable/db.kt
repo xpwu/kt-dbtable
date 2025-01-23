@@ -8,6 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.launch
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.math.min
 import kotlin.reflect.KClass
 
 interface DBInner {
@@ -82,13 +83,14 @@ class DB<T>(internal val dber: DBer<T>, tablesBinding: List<TableBinding> = empt
 typealias TableIfLessVersion = Pair<KClass<*>, Int>
 fun UpTable(table: KClass<*>, ifLessVersion: Int): TableIfLessVersion = Pair(table, ifLessVersion)
 
-// total 只会被调用一次；onProgress 会被多次调用,最后一次调用返回的值为total返回的值
+// onProgress 会被多次调用，第一次调用的参数为 (0, total), 最后一次调用的参数为（total, total)，
+// 多次 onProgress 调用中的 total 调用参数不会改变
 // onProgress 调用结束后，Upgrade 函数才会运行结束
 // tables 中指定的 table 需要在满足以下条件时，才会被Upgrade执行升级，如果某张表不满足条件，后续在首次使用时，会自动升级(如果需要升级的话)
 //  1、table 已经在 db 中存在；
 //  2、table 在 db 中的历史版本号 小于 ifLessVersion；
 //  3、table 在代码中指定的版本号  大于或等于 ifLessVersion。
-suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (Int) -> Unit, total: (Int) -> Unit) {
+suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (pro: Int, total: Int) -> Unit) {
   // 找出所有的需要升级的table
   val list = emptyList<Migration>().toMutableList()
   for (table in tables) {
@@ -112,7 +114,7 @@ suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (Int) ->
     ch.send(count)
   }
   val totalV = ch.receive()
-  total(totalV)
+  onProgress(0, totalV)
 
   // exe
   CoroutineScope(Dispatchers.IO).launch {
@@ -133,7 +135,7 @@ suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (Int) ->
   for (p in ch) {
     // launch {ch.send} 并不能确定顺序性，但onProgress()回调的值必须递增
     if (p > last) {
-      onProgress(p)
+      onProgress(min(p, totalV), totalV)
       last = p
     }
 
