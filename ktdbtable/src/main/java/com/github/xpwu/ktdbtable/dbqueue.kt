@@ -17,7 +17,6 @@ private class dbCtx<T>(
 
 class DBQueue<T>(logName: String = "db",
                  tablesBinding: List<TableBinding> = emptyList(),
-                 upgrade: Boolean = true,
                  init: suspend ()->DBer<T>){
 
   private val scope = CoroutineScope(CoroutineName("DBQueue-$logName"))
