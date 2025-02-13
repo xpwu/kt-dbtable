@@ -90,17 +90,20 @@ fun UpTable(table: KClass<*>, ifLessVersion: Int): TableIfLessVersion = Pair(tab
 //  1、table 已经在 db 中存在；
 //  2、table 在 db 中的历史版本号 小于 ifLessVersion；
 //  3、table 在代码中指定的版本号  大于或等于 ifLessVersion。
+// 某张表被 Upgrade 升级后，会升级到该 table 的最新版本
 suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (pro: Int, total: Int) -> Unit) {
   // 找出所有的需要升级的table
-  val list = emptyList<Migration>().toMutableList()
+  val allMigs = emptyList<Migration>().toMutableList()
+  val allVersions = emptyList<Pair<String, Int>>().toMutableList()
   for (table in tables) {
     val info = GetTableInfo(table.first)
     val name = this.Name(table.first)?:info.DefaultName
     val oldV = this.OldVersion(name)
     // table 还不存在的情况，也不用做 Migrate
     if (this.Exist(name) && table.second > oldV && table.second <= info.Version) {
-      list.addAll(FindBestMigratorPath(oldV, info.Version, info.Migrators))
+      allMigs.addAll(FindBestMigratorPath(oldV, info.Version, info.Migrators))
       this.OpenAndUpgrade(table.first, info, false)
+      allVersions.add(Pair(name, info.Version))
     }
   }
 
@@ -108,7 +111,7 @@ suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (pro: In
   // find total
   CoroutineScope(Dispatchers.IO).launch {
     var count = 0
-    for (mig in list) {
+    for (mig in allMigs) {
       count += mig.Count(this@Upgrade)
     }
     ch.send(count)
@@ -119,16 +122,32 @@ suspend fun DB<*>.Upgrade(tables: List<TableIfLessVersion>, onProgress: (pro: In
   // exe
   CoroutineScope(Dispatchers.IO).launch {
     var done = 0
-    for (mig in list) {
-      var thisCnt = 0
-      mig.Exe(this@Upgrade) {
-        launch {
-          ch.send(done + it)
+    this@Upgrade.dber.BeginTransaction()
+    try {
+      for (mig in allMigs) {
+        var thisCnt = 0
+        mig.Exe(this@Upgrade) {
+          launch {
+            ch.send(done + it)
+          }
+          thisCnt = it
         }
-        thisCnt = it
+        done += thisCnt
       }
-      done += thisCnt
+
+      for (ver in allVersions) {
+        this@Upgrade.SetVersion(ver.first, ver.second)
+      }
+
+      this@Upgrade.dber.SetTransactionSuccessful()
+
+    } catch (e: Exception) {
+      e.printStackTrace();
+      throw e
+    } finally {
+      this@Upgrade.dber.EndTransaction()
     }
+
   }
 
   var last = 0
