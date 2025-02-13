@@ -2,10 +2,8 @@ package com.github.xpwu.ktdbtable
 
 import androidx.collection.SparseArrayCompat
 import kotlin.reflect.KClass
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.full.createInstance
-import kotlin.reflect.full.declaredMemberExtensionFunctions
+import kotlin.reflect.full.*
+
 
 
 interface Table {
@@ -16,6 +14,7 @@ interface Table {
   fun OriginNameIn(db: DB<*>): String
 }
 
+// todo: may be error
 fun CreateTableIn(table: KClass<*>, db: DB<*>) {
   val eFuncs = table.companionObject?.declaredMemberExtensionFunctions ?: return
   for (func in eFuncs) {
@@ -73,16 +72,10 @@ data class TableInfo (
  */
 fun GetTableInfo(table: KClass<*>): TableInfo {
   // table 在编译时，processor 会检查 companionObject, 所以一定有 companionObject
-  val eFuncs = table.companionObject!!.declaredMemberExtensionFunctions
-  for (func in eFuncs) {
-    // extension func.
-    if (func.name == "TableInfo" && func.parameters.isEmpty()) {
-      return func.call(table.companionObjectInstance) as TableInfo
-    }
-  }
-
-  // processor 生成的TableInfo方法, 所以一定存在
-  throw Exception("TableInfo not be found! ktdbtable-processor may be error!")
+  // processor 生成的扩展方法的文件有注解：@file:JvmName("XXXTable")，通过 java 类的 getMethod 能获取到 xxx.TableInfo() 方法
+  // processor 生成的 TableInfo 方法, 所以一定存在
+  val func = Class.forName(table.qualifiedName + "Table").getMethod("TableInfo", table.companionObject!!.java)
+  return func.invoke(null, table.companionObjectInstance) as TableInfo
 }
 
 /**
